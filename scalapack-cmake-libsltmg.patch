@@ -1,0 +1,31 @@
+diff -Naur -x BLACS -x PBLAS a/CMakeLists.txt b/CMakeLists.txt
+--- a/CMakeLists.txt	2012-05-02 06:58:24.000000000 +0300
++++ b/CMakeLists.txt	2017-02-15 11:26:02.000000000 +0300
+@@ -140,6 +140,11 @@
+ IF(LAPACK_LIBRARIES)
+   include(CheckFortranFunctionExists)
+   message(STATUS "--> LAPACK supplied by user is ${LAPACK_LIBRARIES}.")
++# receive in white space separated list, and transform into cmake list (;)
++SEPARATE_ARGUMENTS(LAPACK_LIBRARIES) 
++set( AUXSTR ${LAPACK_LIBRARIES} )
++set(LAPACK_LIBRARIES "${AUXSTR}" CACHE STRING "User provided list of lapack libraries." FORCE)
++  message(STATUS "----> LAPACK supplied by user is ${LAPACK_LIBRARIES}.")
+   set(CMAKE_REQUIRED_LIBRARIES ${LAPACK_LIBRARIES})
+   CHECK_FORTRAN_FUNCTION_EXISTS("dgesv" LAPACK_FOUND)
+   unset( CMAKE_REQUIRED_LIBRARIES )
+diff -Naur -x BLACS -x PBLAS a/TESTING/EIG/CMakeLists.txt b/TESTING/EIG/CMakeLists.txt
+--- a/TESTING/EIG/CMakeLists.txt	2011-11-08 23:48:31.000000000 +0300
++++ b/TESTING/EIG/CMakeLists.txt	2017-02-20 15:15:08.000000000 +0300
+@@ -97,3 +97,12 @@
+ target_link_libraries(xshseqr scalapack ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES})
+ target_link_libraries(xdhseqr scalapack ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES})
+ 
++file(GLOB SLTMG_SRC "*.f")
++add_library( sltmg STATIC ${SLTMG_SRC})
++scalapack_install_library( sltmg )
++#install( TARGETS sltmg DESTINATION lib )
++ADD_CUSTOM_TARGET(install.sltmg
++    ${CMAKE_COMMAND}
++    -DBUILD_TYPE=${CMAKE_BUILD_TYPE}
++    -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_install.cmake)
++ADD_DEPENDENCIES(install.sltmg sltmg) 

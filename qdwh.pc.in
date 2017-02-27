@@ -1,0 +1,9 @@
+prefix=@prefix@
+libdir=@libdir@
+
+Name: qdwh
+Description: QR-based Dynamically Weighted Halley (QDWH)
+Version: @QDWH_VERSION@
+URL: http://github.com/ecrc/qdwh-dev
+Libs: -L${libdir} -lqdwh
+Requires: mpi sclapack elpa
