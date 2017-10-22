@@ -350,15 +350,14 @@ int main(int argc, char **argv) {
                    * A contains the orthogonal polar factor.
                    */
 
-                  my_info_facto = pdgeqdwh( verbose, 0, n, n, optcond, 
-                                        A, descA, 
-                                        H, descH, 
-                                        Wglo, descWglo, LDW, 
-                                        C, descC, 
-                                        tau,
-                                        Wloc, lwork,
-                                        iWloc, liwork_cn, 
-                                        ictxt, &flops);
+                  pdgeqdwh( n, n,  
+                            A, i0, i0, descA, 
+                            C, i0, i0, descC, 
+                            H, i0, i0, descH, 
+                            Wglo, i0, i0, descWglo,  
+                            Wloc, lwork,
+                            iWloc, liwork_cn, 
+                            &info_facto_qw);
 
 	              MPI_Allreduce( &my_info_facto, &info_facto_qw, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
 
