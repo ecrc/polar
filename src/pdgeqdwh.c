@@ -155,59 +155,21 @@
  *  DESCH   (global input) INTEGER array of dimension DLEN_
  *          The array descriptor for the distributed matrix H.
  *
- *  A       (local workspace) block cyclic DOUBLE PRECISION
- *          array,
- *          global dimension (M, N), local dimension (MP, NQ)
- *
- *  IA      (global input) INTEGER
- *          The row index in the global array A indicating the first
- *          row of sub( A ).
- *
- *  JA      (global input) INTEGER
- *          The column index in the global array A indicating the
- *          first column of sub( A ).
- *
- *  DESCA   (global input) INTEGER array of dimension DLEN_
- *          The array descriptor for the distributed matrix A.
- *
- *  B       (local workspace) block cyclic DOUBLE PRECISION
- *          array,
- *          global dimension (M, N), local dimension (MP, NQ)
- *
- *  IB      (global input) INTEGER
- *          The row index in the global array B indicating the first
- *          row of sub( B ).
- *
- *  JB      (global input) INTEGER
- *          The column index in the global array B indicating the
- *          first column of sub( B ).
- *
- *  DESCB   (global input) INTEGER array of dimension DLEN_
- *          The array descriptor for the distributed matrix B.
- *
  *  WORK    (local workspace/output) DOUBLE PRECISION   array, dimension
- *          (LWORK)
+ *          (LWORK* NQ)
  *          On exit, if INFO = 0, WORK(1) returns the optimal LWORK.
  *
  * LWORK    (local input) INTEGER
  *          The dimension of the array WORK.
+ *          LWORK must be at least LWORK >= 3*MP*NQ
  *          If LWORK = -1, then LWORK is global input and a workspace    
  *          query is assumed; the routine only calculates the minimum
  *          and optimal size for all work arrays. Each of these
  *          values is returned in the first entry of the corresponding
  *          work array, and no error message is issued by PXERBLA.         
  *
- *  IW   (local workspace) INTEGER array, dimension (LWI)
- *          On exit, if LIWORK > 0, IWORK(1) returns the optimal LIWORK.
- *
- *  LWI  (input) INTEGER
- *          The dimension of the array IW.
- *          PDGETRF_LIWORK = ( LOCr(M_A)+MB_A )
- *          PDGECON_LIWORK >= MAX( 1, LOCr(N+MOD(IA-1,MB_A)) ).
- *          LWI = MAX(PDGETRF_LIWORK, PDGECON_LIWORK ) 
- *
- *  INFO (output) INTEGER
- *          The return value
+ *  INFO (global output) INTEGER
+ *          = 0:  successful exit
  *
  ******************************************************************************/
 
@@ -219,13 +181,9 @@ double tol3;
 int pdgeqdwh( int M, int N, 
 	      double *U, int iU, int jU, int *descU, 
               double *H, int iH, int jH, int *descH,
-              double *A, int iA, int jA, int *descA, 
-              double *B, int iB, int jB, int *descB, 
-              double *Work, int lWork,
-              int *Wi, int lWi, 
+              double *Work, int lWork, 
               int *info)
 {
-
 
     complex dd, sqd, a1;
     double conv = 100.;
@@ -233,58 +191,88 @@ int pdgeqdwh( int M, int N,
     double tol = 3.e-1;
     double flops_dgeqrf, flops_dorgqr, flops_dgemm, flops_dpotrf, flops_dtrsm;
     long int matsize;
-    int MB = 2*M;
+    int MB = 2*N;
     int it, itconv, facto = -1;
-    int itqr = 0, itpo =0;
+    int itqr = 0, itpo = 0, alloc_qr = 0;
     int i1 =1, i0 = 0, iM = M+1;
     int myrank_mpi;
     double qwtime, litime, nrmtime, potime, qrtime, Htime;
     double sync_time_elapsed, reduced_time_elapsed;
 
     int verbose = 0, prof = 0, optcond = 0;
-    double *flops;
-    //*flops = 0.0;
+    double flops;
+    flops = 0.0;
 
-    int mloc, nloc, nb;   
+    int mloc, nloc, mlocW, nb;   
     int myrow, mycol, nprow, npcol;   
     int ctxt_ = 1, nb_ = 5;
     int ictxt;
 
+    int lWi, lwork_qr, lwork_cn;
+    int *Wi = (int *)calloc(1,sizeof(int)) ;
+    double *W  = (double *)calloc(1,sizeof(double)) ;
+
     /*
      * Get the grid parameters
      */
-    ictxt = descA[ctxt_];
+    ictxt = descU[ctxt_];
     Cblacs_get( -1, 0, &ictxt );
-    nb = descA[nb_];
+    nb = descU[nb_];
     Cblacs_gridinfo( ictxt, &nprow, &npcol, &myrow, &mycol );
     mloc  = numroc_( &M, &nb, &myrow, &i0, &nprow );
     nloc  = numroc_( &N, &nb, &mycol, &i0, &npcol );
-    double *tau   = (double *)malloc(nloc*sizeof(double)) ;
+    mlocW = numroc_( &MB, &nb, &myrow, &i0, &nprow );
 
     /*
      * Find Workspace 
      */
-    int lwork_qr, lwork_cn, liwork_cn;
-    if (lWork  == -1 || lWi == -1){
-          double Anorm = 1., Li = 1.;
-          lwork_cn = -1; liwork_cn = -1;
-          pdgecon_ ("1", &N, A, &iA, &jA, descA, 
+    if (lWork  == -1 ){
+         /*
+          int lwork_qr = -1, lwork_cn = -1;
+          pdgecon_ ("1", &M, H, &iH, &jH, descH, 
                     &Anorm, &Li, 
-                    Work, &lWork, Wi, &lWi, info);
-          lwork_cn  = Work[0];
-          liwork_cn = N;//(int)iWloc[0];
+                    Work, &lwork_cn, Wi, &lWi, info);
+          lwork_cn  = (int)Work[0];
+          lWi = N;//(int)iWloc[0];
 
-          lwork_qr = -1; 
-          pdgeqrf_(&MB, &N, Work, &iB, &jB, descB, 
-                   tau, Work, &lWork, info);
+          pdgeqrf_(&MB, &N, H, &iH, &iH, descH, 
+                   tau, Work, &lwork_qr, info);
           lwork_qr  = Work[0];
-          lWork  = max ( Work[0], lwork_qr);
-          lWi = liwork_cn;
-          Work[0]  = lWork;
-          Wi[0] = lWi;
+          lWork  = max ( lwork_cn, lwork_qr);
+          lWi = N;
+          */
+          Work[0]  = 3*mloc;
           return 0;
     }
 
+    /**
+     * Create the required workspaces
+     * Needed for debugging the code
+     */
+
+    double *A=NULL, *B=NULL;
+    int descA[9], descB[9];
+
+    matsize = M*N;
+    if ( Work == NULL ) {
+	matsize *= sizeof(double);
+	A  = (double *)malloc(mloc*nloc*sizeof(double));
+	B  = (double *)malloc(mlocW*nloc*sizeof(double));
+    }
+    else {
+        A = Work; 
+        B = A + mloc*nloc;
+    }
+
+    descinit_( descA, &M, &N, &nb, &nb, &i0, &i0, &ictxt, &mloc, info );
+    descinit_( descB, &MB, &N, &nb, &nb, &i0, &i0, &ictxt, &mlocW, info );
+
+    double *tau   = (double *)malloc(nloc*sizeof(double)) ;
+
+    if ( !optcond ){
+        lWi = N; 
+        Wi  = (int *)malloc(lWi*sizeof(int)) ;
+    }
 
     MPI_Comm_rank(MPI_COMM_WORLD, &myrank_mpi);
 
@@ -322,7 +310,7 @@ int pdgeqdwh( int M, int N,
 
     pdlacpy_ ( "A", &M, &N, U, &i1, &i1, descU, B, &i1, &i1, descB );
     if (verbose & myrank_mpi == 0) { fprintf(stderr, "lacpy ends\n");}
-    Anorm = pdlange_ ( "1", &M, &N, U, &i1, &i1, descU, Work);
+    Anorm = pdlange_ ( "1", &M, &N, U, &i1, &i1, descU, H);
     if (verbose & myrank_mpi == 0) { fprintf(stderr, "dlange ends\n");}
 
     alpha = 1.0; 
@@ -332,30 +320,35 @@ int pdgeqdwh( int M, int N,
 
 
     /* estimate condition number using QR */
-    if (optcond){
-        pdgeqrf_(&M, &N, B, &i1, &i1, descB, tau, Work, &lWork, info);
+    if ( optcond ){
+        pdgeqrf_(&M, &N, B, &i1, &i1, descB, tau, H, &lWork, info);
 
         sync_time_elapsed =- MPI_Wtime();
         pdtrtri_( "U", "N", &N, B, &i1, &i1, descB, info );
         sync_time_elapsed += MPI_Wtime();
         MPI_Allreduce( &sync_time_elapsed, &reduced_time_elapsed, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
 
-        Ainvnorm = pdlange_ ( "1", &M, &N, B, &i1, &i1, descB, Work);
+        Ainvnorm = pdlange_ ( "1", &M, &N, B, &i1, &i1, descB, H);
         Li = ( 1.0 / Ainvnorm)/Anorm;    
         Li = norm_est/1.1*Li;    
-        *flops += FLOPS_DGEQRF( M, N )
+        flops += FLOPS_DGEQRF( M, N )
                + FLOPS_DTRTRI(  N );
     }
     /* estimate condition number using LU */
     else {
         pdgetrf_ ( &M, &N, B, &i1, &i1, descB, Wi, info );
         if (verbose & myrank_mpi == 0) { fprintf(stderr, "LU ends\n");}
-        pdgecon_ ("1", &M, B, &i1, &i1, descB, &Anorm, &Li, Work, &lWork, Wi, &lWi, info);
+
+        int lwork_cn = -1;
+        pdgecon_ ("1", &M, B, &i1, &i1, descB, &Anorm, &Li, H, &lwork_cn, Wi, &lWi, info);
+        lwork_cn = H[0];
+
+        pdgecon_ ("1", &M, B, &i1, &i1, descB, &Anorm, &Li, H, &lwork_cn, Wi, &lWi, info);
         Li = norm_est/1.1*Li;    
         /**
          * WARNING: The cost of the gecon is estimated with only one iteration
          */
-        *flops += FLOPS_DGETRF(N, N)
+        flops += FLOPS_DGETRF(N, N)
                + 2. * FLOPS_DTRSM( 'L', N, 1 );
     }
 
@@ -397,13 +390,23 @@ int pdgeqdwh( int M, int N,
 	a   = creal(a1);
 	b   = (a - 1.) * (a - 1.) / 4.;
 	c   = a + b - 1.;
-        if (c > 100) {itcqr += 1;} else {itcpo += 1;}
+        if (c > 100) {itcqr += 1; alloc_qr = 1;} else {itcpo += 1;}
 	// Update Liconv
 	Liconv  = Liconv * (a + b * L2) / (1. + c * L2);
     }
     if (verbose & myrank_mpi == 0) { fprintf(stderr, "QDWH loop starts\n");}
     if (myrank_mpi == 0) { fprintf(stderr, "\nItConv %d itcqr %d itcpo %d norm_est %2.4e Li %2.4e \n", itconv, itcqr, itcpo, norm_est, Li); fprintf(stderr, "It Facto Conv\n");}
     it = 0;
+
+    if ( alloc_qr ){
+         lwork_qr = -1;
+         pdgeqrf_(&MB, &N, B, &i1, &i1, descB, 
+                  tau, W, &lwork_qr, info);
+         lwork_qr  = W[0];
+         W  = (double *)malloc((lwork_qr)*sizeof(double)) ;
+    }
+
+
     while(conv > tol3 || it < itconv ) {
 	/* This should have converged in less than 50 iterations */
 	if (it > 100) {
@@ -427,7 +430,7 @@ int pdgeqdwh( int M, int N,
 	Li  = Li * (a + b * L2) / (1. + c * L2);
 
 	if ( c > 100) {
-
+            
             qrtime = 0.0;
             if(prof) {qrtime =- MPI_Wtime();}
 
@@ -451,8 +454,8 @@ int pdgeqdwh( int M, int N,
 	     */
             sync_time_elapsed =- MPI_Wtime();
 
-            pdgeqrf_(&MB, &N, B, &i1, &i1, descB, tau, Work, &lWork, info);
-            pdorgqr_(&MB, &N, &N, B, &i1, &i1, descB, tau, Work, &lWork, info);
+            pdgeqrf_(&MB, &N, B, &i1, &i1, descB, tau, W, &lwork_qr, info);
+            pdorgqr_(&MB, &N, &N, B, &i1, &i1, descB, tau, W, &lwork_qr, info);
 
             sync_time_elapsed += MPI_Wtime();
             MPI_Allreduce( &sync_time_elapsed, &reduced_time_elapsed, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
@@ -471,7 +474,7 @@ int pdgeqdwh( int M, int N,
 	    flops_dgeqrf = FLOPS_DGEQRF( 2*M, N );
 	    flops_dorgqr = FLOPS_DORGQR( 2*M, N, N );
 	    flops_dgemm  = FLOPS_DGEMM( M, N, N );
-	    *flops += flops_dgeqrf + flops_dorgqr + flops_dgemm;
+	    flops += flops_dgeqrf + flops_dorgqr + flops_dgemm;
 
             itqr += 1;
 	    facto = 0;
@@ -480,7 +483,7 @@ int pdgeqdwh( int M, int N,
 	    /**
 	     * Compute Q1 = c * U * U' + I
 	     */
-
+            alloc_qr = 0;
             potime = 0.0;
             if(prof) {potime =- MPI_Wtime();}
 
@@ -525,7 +528,7 @@ int pdgeqdwh( int M, int N,
 	    flops_dgemm  = FLOPS_DGEMM( M, N, N );
 	    flops_dpotrf = FLOPS_DPOTRF( M );
 	    flops_dtrsm  = FLOPS_DTRSM( 'L', M, N );
-	    *flops += flops_dgemm + flops_dpotrf + 2. * flops_dtrsm;
+	    flops += flops_dgemm + flops_dpotrf + 2. * flops_dtrsm;
 
             itpo += 1;
 	    facto = 1;
@@ -541,7 +544,7 @@ int pdgeqdwh( int M, int N,
 
             sync_time_elapsed =- MPI_Wtime();
 
-            conv = pdlange_( "F", &M, &N, H, &i1, &i1, descH, Work);
+            conv = pdlange_( "F", &M, &N, H, &i1, &i1, descH, W);
 
             sync_time_elapsed += MPI_Wtime();
             MPI_Allreduce( &sync_time_elapsed, &reduced_time_elapsed, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
@@ -568,7 +571,7 @@ int pdgeqdwh( int M, int N,
      if(prof) {Htime += MPI_Wtime();}
 
      flops_dgemm  = FLOPS_DGEMM( M, N, N );
-     *flops += flops_dgemm;
+     flops += flops_dgemm;
 
 
     if(prof) {qwtime += MPI_Wtime();}
@@ -587,6 +590,9 @@ int pdgeqdwh( int M, int N,
 
 
     free( tau );
+    if ( !optcond ){
+        free( Wi );
+    }
 
     if (verbose & myrank_mpi == 0) { fprintf(stderr, "Exiting QDWH\n");}
     return 0;
