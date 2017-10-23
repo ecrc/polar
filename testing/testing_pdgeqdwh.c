@@ -313,7 +313,10 @@ int main(int argc, char **argv) {
 
         lWork = Wloc[0];
         Wloc  = (double *)malloc(lWork*nloc*sizeof(double));
-	//Wloc  = (double *)malloc((lWork*n)*sizeof(double));
+
+        //int MB3 = 3*n*n;
+        //int mlocW3 = numroc_( &MB3, &nb, &myrow, &i0, &nprow );
+	//Wloc  = (double *)malloc((mlocW3*nloc)*sizeof(double));
                
 
         for (iter = 0; iter < niter; iter++) {
@@ -333,8 +336,8 @@ int main(int argc, char **argv) {
             pdgeqdwh( n, n,  
                       A, i1, i1, descA, 
                       H, i1, i1, descH, 
-                      //NULL, lWork, //debug
-                      Wloc, lWork,
+                      NULL, lWork, //debug
+                      //Wloc, lWork,
                       &info_facto_qw);
 
 	    MPI_Allreduce( &my_info_facto, &info_facto_qw, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);

@@ -223,6 +223,12 @@ int pdgeqdwh( int M, int N,
     nloc  = numroc_( &N, &nb, &mycol, &i0, &npcol );
     mlocW = numroc_( &MB, &nb, &myrow, &i0, &nprow );
 
+    //if ( nprow == -1 ){
+    //     *info = -(600+ctxt_);
+    //}
+    //int M_ = 3*M; int mlocW_;  //B = Work;
+    //mlocW_ = numroc_( &M_, &nb, &myrow, &i0, &nprow );  //B = Work;
+
     /*
      * Find Workspace 
      */
@@ -241,7 +247,8 @@ int pdgeqdwh( int M, int N,
           lWork  = max ( lwork_cn, lwork_qr);
           lWi = N;
           */
-          Work[0]  = 3*mloc;
+          //Work[0]  = mlocW_; //B = Work;
+          Work[0] = 3*mloc;
           return 0;
     }
 
@@ -260,12 +267,16 @@ int pdgeqdwh( int M, int N,
 	B  = (double *)malloc(mlocW*nloc*sizeof(double));
     }
     else {
-        A = Work; 
-        B = A + mloc*nloc;
+        B = Work;
+        A = B + 2*mloc*nloc;
     }
 
     descinit_( descA, &M, &N, &nb, &nb, &i0, &i0, &ictxt, &mloc, info );
-    descinit_( descB, &MB, &N, &nb, &nb, &i0, &i0, &ictxt, &mlocW, info );
+    descinit_( descB, &MB, &N, &nb, &nb, &i0, &i0, &ictxt, &mlocW, info ); //B = A + mloc*nloc;
+
+    //lWork = 3*M; MB = 2*M;
+    //descinit_( descA, &lWork, &N, &nb, &nb, &MB, &i0, &ictxt, &mloc, info );
+    //descinit_( descB, &lWork, &N, &nb, &nb, &i0, &i0, &ictxt, &mlocW, info ); //B = Work;
 
     double *tau   = (double *)malloc(nloc*sizeof(double)) ;
 
@@ -287,6 +298,13 @@ int pdgeqdwh( int M, int N,
 	tol3 = pow(tol1, 1./3.);
 	init = 1;
     }
+
+    /* Quick return if possible */
+    if ( M == 0 || N == 0 ){
+	return 0;
+    }
+
+    	chk1mat();
 
     if ( M < N ){
 	fprintf(stderr, "error(m >= n is required)") ;
@@ -500,7 +518,7 @@ int pdgeqdwh( int M, int N,
 
 	    /**
 	     * Solve Q1 x = Q2, with Q2 = U
-	    */
+	     */
             alpha = 1.0; beta = 0.0;
             pdgeadd_( "T", &M, &N, &alpha, U, &i1, &i1, descU, &beta, B, &i1, &i1, descB);
 
@@ -513,7 +531,7 @@ int pdgeqdwh( int M, int N,
 
 	    /* Copy U into H to check the convergence of QDWH */
             if (it >= itconv ){
-            pdlacpy_( "A", &M, &N, U, &i1, &i1, descU, H, &i1, &i1, descH );
+                pdlacpy_( "A", &M, &N, U, &i1, &i1, descU, H, &i1, &i1, descH );
             }
 
 	    /**
@@ -592,6 +610,10 @@ int pdgeqdwh( int M, int N,
     free( tau );
     if ( !optcond ){
         free( Wi );
+    }
+    if ( Work == NULL ) {
+        free( A );
+        free( B );
     }
 
     if (verbose & myrank_mpi == 0) { fprintf(stderr, "Exiting QDWH\n");}
