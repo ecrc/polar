@@ -304,8 +304,6 @@ int pdgeqdwh( int M, int N,
 	return 0;
     }
 
-    	chk1mat();
-
     if ( M < N ){
 	fprintf(stderr, "error(m >= n is required)") ;
 	return -1;
