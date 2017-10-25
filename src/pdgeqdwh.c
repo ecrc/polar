@@ -222,6 +222,57 @@ int pdgeqdwh( int M, int N,
     mloc  = numroc_( &M, &nb, &myrow, &i0, &nprow );
     nloc  = numroc_( &N, &nb, &mycol, &i0, &npcol );
     mlocW = numroc_( &MB, &nb, &myrow, &i0, &nprow );
+ 
+   /*
+    * Test the input parameters
+    */
+   *info = 0; 
+   if( nprow == -1 ){
+       info = -(600+ctxt_);
+   }
+   else {
+       /* Quick return if possible */
+       if ( M < 0 || N < 0 ){
+	   fprintf(stderr, "error(m or n is negative)") ;
+	   return -1;
+       }
+       if ( M == 0 || N == 0 ){
+	   return 0;
+       }
+       if ( M < N ){
+	   fprintf(stderr, "error(m >= n is required)") ;
+	   return -1;
+       }
+       /*
+       size = min(M,N);
+       sizeb = max(M,N);
+       nprocs = nprow*npcol;
+
+       if (M >= N){
+           ioffd = jU - 1;
+           ioffe = iU - 1;
+           sizepos = 1;
+       }
+       else {
+           ioffd = iU - 1;
+           ioffe = jU - 1;
+           sizepos = 3;
+       }
+        CALL CHK1MAT(M,3,N,4,IA,JA,DESCA,8,INFO)
+           IF (WANTU.EQ.1) THEN
+               CALL CHK1MAT(M,3,SIZE,SIZEPOS,IU,JU,DESCU,13,INFO)
+           END IF
+           IF (WANTVT.EQ.1) THEN
+               CALL CHK1MAT(SIZE,SIZEPOS,N,4,IVT,JVT,DESCVT,17,INFO)
+           END IF
+           CALL IGAMX2D(DESCA(CTXT_),'A',' ',1,1,INFO,1,1,1,-1,-1,0)
+ *
+           IF (INFO.EQ.0) THEN
+chk1mat_();
+       */
+
+   }
+
 
     //if ( nprow == -1 ){
     //     *info = -(600+ctxt_);
@@ -299,15 +350,6 @@ int pdgeqdwh( int M, int N,
 	init = 1;
     }
 
-    /* Quick return if possible */
-    if ( M == 0 || N == 0 ){
-	return 0;
-    }
-
-    if ( M < N ){
-	fprintf(stderr, "error(m >= n is required)") ;
-	return -1;
-    }
 
     if (verbose & myrank_mpi == 0) { fprintf(stderr, "Finish preparing workspace for QDWH\n");}
 
