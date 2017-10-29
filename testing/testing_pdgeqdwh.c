@@ -382,7 +382,6 @@ int main(int argc, char **argv) {
                      fprintf(stderr, "/////////////////////////////////////////////////////////////////////////\n");
                 }
             }
-            free(Wloc);
         }
 
 
@@ -394,6 +393,7 @@ int main(int argc, char **argv) {
 	free( C );
 	free( H );
 	free( D );
+        free(Wloc);
         if (verbose & myrank_mpi == 0) fprintf(stderr, "Free matrices done\n");
     } // End loop over range
 
