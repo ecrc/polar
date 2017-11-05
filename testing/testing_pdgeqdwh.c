@@ -173,7 +173,7 @@ int main(int argc, char **argv) {
     double *Acpy=NULL, *C=NULL;
 
     /* Allocation for pdlatsm */
-    double *Wloc=NULL, *D=NULL;
+    double *Wloc1=NULL, *Wloc2=NULL, *D=NULL;
 
     double eps = LAPACKE_dlamch_work('e');
     int iprepad, ipostpad, sizemqrleft, sizemqrright, sizeqrf, sizeqtq,
@@ -270,12 +270,12 @@ int main(int argc, char **argv) {
                          &sizeqtq, &sizechk, &sizesyevx, &isizesyevx, &sizesubtst, 
                          &isizesubtst, &sizetst, &isizetst );
            if (verbose & myrank_mpi == 0) fprintf(stderr, "Setting lwork done\n");
-           Wloc = (double *)calloc(lwork,sizeof(double)) ;
+           Wloc1 = (double *)calloc(lwork,sizeof(double)) ;
            pdlatms_(&n, &n, dist,
                     iseed, sym, D, &mode, &cond, &dmax,
                     &kl, &ku, pack, 
                     A, &i1, &i1, descA, &order, 
-                    Wloc, &lwork, &info);
+                    Wloc1, &lwork, &info);
            if (verbose & myrank_mpi == 0) fprintf(stderr, "MatGen done\n");
            if (info != 0) {
                fprintf(stderr, "An error occured during matrix generation: %d\n", info );
@@ -284,12 +284,12 @@ int main(int argc, char **argv) {
            pdlacpy_( "All", &n, &n, 
                      A, &i1, &i1, descA, 
                      Acpy, &i1, &i1, descAcpy ); 
-           frobA  = pdlange_ ( "f", &n, &n, A, &i1, &i1, descA, Wloc);
+           frobA  = pdlange_ ( "f", &n, &n, A, &i1, &i1, descA, Wloc1);
            beta = 0.0;
 
            if (verbose & myrank_mpi == 0) fprintf(stderr, "Copy to Acpy done\n");
 
-           free( Wloc );
+           free( Wloc1 );
         }
 
         if (myrank_mpi == 0) fprintf(stderr, "\n\n");
@@ -300,22 +300,31 @@ int main(int argc, char **argv) {
         // QDWH
 	//if ( qwmr || qwdc || qwel || polarqdwh) {
         jobu   = lvec ? "V" : "N";
-        int lWork, lWi;
-        Wloc  = (double *)calloc(1,sizeof(double)) ;
-        lWork = -1; 
+        int lWork1, lWork2, lWi;
+        Wloc1  = (double *)calloc(1,sizeof(double)) ;
+        Wloc2  = (double *)calloc(1,sizeof(double)) ;
+        lWork1 = -1; 
+        lWork2 = -1; 
 
         pdgeqdwh( n, n,  
                   A, i1, i1, descA, 
                   H, i1, i1, descH, 
                   //NULL, lWork, //debug
-                  Wloc, lWork,
+                  Wloc1, lWork1,
+                  Wloc2, lWork2,
                   &info_facto_qw);
 
-        lWork = Wloc[0];
-        Wloc  = (double *)malloc(lWork*nloc*sizeof(double));
+        lWork1 = Wloc1[0];
+        lWork2 = Wloc2[0];
 
-        //int MB3 = 3*n*n;
+        
+        //Wloc  = (double *)malloc(lWork*n*sizeof(double));
+	Wloc1  = (double *)malloc((lWork1*nloc)*sizeof(double));
+	Wloc2  = (double *)malloc((lWork2*nloc)*sizeof(double));
+
+        //int MB3 = 3*n;
         //int mlocW3 = numroc_( &MB3, &nb, &myrow, &i0, &nprow );
+        //mlocW3 = ((mlocW3+(nb-1))/nb)*nb;
 	//Wloc  = (double *)malloc((mlocW3*nloc)*sizeof(double));
                
 
@@ -336,8 +345,9 @@ int main(int argc, char **argv) {
             pdgeqdwh( n, n,  
                       A, i1, i1, descA, 
                       H, i1, i1, descH, 
-                      NULL, lWork, //debug
-                      //Wloc, lWork,
+                      //NULL, lWork, //debug
+                      Wloc1, lWork1,
+                      Wloc2, lWork2,
                       &info_facto_qw);
 
 	    MPI_Allreduce( &my_info_facto, &info_facto_qw, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
@@ -360,7 +370,7 @@ int main(int argc, char **argv) {
                          A, &i1, &i1, descA, 
                          &beta, 
                          C, &i1, &i1, descC);
-                orth_Uqw  = pdlange_ ( "f", &n, &n, C, &i1, &i1, descC, Wloc)/frobA;
+                orth_Uqw  = pdlange_ ( "f", &n, &n, C, &i1, &i1, descC, Wloc1)/frobA;
                /*
                 * checking the factorization |A-Up*H|
                 */ 
@@ -372,7 +382,7 @@ int main(int argc, char **argv) {
                          H, &i1, &i1, descH, 
                          &beta, 
                          C, &i1, &i1, descC);
-                berr_UHqw  = pdlange_ ( "f", &n, &n, C, &i1, &i1, descC, Wloc)/frobA;
+                berr_UHqw  = pdlange_ ( "f", &n, &n, C, &i1, &i1, descC, Wloc1)/frobA;
                 if (  myrank_mpi == 0) {
                      fprintf(stderr, "# QDWH \n"); 
                      fprintf(stderr, "#\n");
@@ -393,7 +403,8 @@ int main(int argc, char **argv) {
 	free( C );
 	free( H );
 	free( D );
-        free(Wloc);
+        free(Wloc1);
+        free(Wloc2);
         if (verbose & myrank_mpi == 0) fprintf(stderr, "Free matrices done\n");
     } // End loop over range
 

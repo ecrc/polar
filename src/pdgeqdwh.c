@@ -181,7 +181,8 @@ double tol3;
 int pdgeqdwh( int M, int N, 
 	      double *U, int iU, int jU, int *descU, 
               double *H, int iH, int jH, int *descH,
-              double *Work, int lWork, 
+              double *Work1, int lWork1, 
+              double *Work2, int lWork2, 
               int *info)
 {
 
@@ -191,7 +192,7 @@ int pdgeqdwh( int M, int N,
     double tol = 3.e-1;
     double flops_dgeqrf, flops_dorgqr, flops_dgemm, flops_dpotrf, flops_dtrsm;
     long int matsize;
-    int MB = 2*N;
+    int MB = 2*M;
     int it, itconv, facto = -1;
     int itqr = 0, itpo = 0, alloc_qr = 0;
     int i1 =1, i0 = 0, iM = M+1;
@@ -212,6 +213,8 @@ int pdgeqdwh( int M, int N,
     int *Wi = (int *)calloc(1,sizeof(int)) ;
     double *W  = (double *)calloc(1,sizeof(double)) ;
 
+    int iinfo;
+
     /*
      * Get the grid parameters
      */
@@ -223,85 +226,88 @@ int pdgeqdwh( int M, int N,
     nloc  = numroc_( &N, &nb, &mycol, &i0, &npcol );
     mlocW = numroc_( &MB, &nb, &myrow, &i0, &nprow );
  
+   int lmin, lquery;
+   //*info = 0; 
+   lquery =  (lWork1 == -1 || lWork2 == -1); 
    /*
     * Test the input parameters
-    */
-   *info = 0; 
    if( nprow == -1 ){
-       info = -(600+ctxt_);
+       *info = -(600+ctxt_);
    }
-   else {
-       /* Quick return if possible */
+   else { 
        if ( M < 0 || N < 0 ){
 	   fprintf(stderr, "error(m or n is negative)") ;
 	   return -1;
-       }
-       if ( M == 0 || N == 0 ){
-	   return 0;
        }
        if ( M < N ){
 	   fprintf(stderr, "error(m >= n is required)") ;
 	   return -1;
        }
-       /*
-       size = min(M,N);
-       sizeb = max(M,N);
-       nprocs = nprow*npcol;
 
-       if (M >= N){
-           ioffd = jU - 1;
-           ioffe = iU - 1;
-           sizepos = 1;
+       int i2 = 2, i6 = 6, i10 = 10, i_1;
+       int idum1, idum2;
+       chk1mat_(&M, &i1, &N, &i2, &iU, &jU, descU, &i6, info);
+       chk1mat_(&M, &i1, &N, &i2, &iH, &jH, descH, &i10, info);
+       //igamx2d_(descU[ctxt_], "A", " ", &i1, &i1, info, &i1, &i1, &i1, &i_1, &i_1, &i0);// TRY
+
+          lquery =  (lWork1 == -1 || lWork2 == -1); 
+       if (*info == 0){
+          lmin = 3*M;
+          Work[0] = lmin;
+          lquery =  (lWork == -1); 
+          if( lWork < lmin & !lquery ){
+              *info = -9;
+          }
+       }
+       if( lWork == -1 ) {
+             idum1 = -1;
        }
        else {
-           ioffd = iU - 1;
-           ioffe = jU - 1;
-           sizepos = 3;
+             idum1 =  1;
        }
-        CALL CHK1MAT(M,3,N,4,IA,JA,DESCA,8,INFO)
-           IF (WANTU.EQ.1) THEN
-               CALL CHK1MAT(M,3,SIZE,SIZEPOS,IU,JU,DESCU,13,INFO)
-           END IF
-           IF (WANTVT.EQ.1) THEN
-               CALL CHK1MAT(SIZE,SIZEPOS,N,4,IVT,JVT,DESCVT,17,INFO)
-           END IF
-           CALL IGAMX2D(DESCA(CTXT_),'A',' ',1,1,INFO,1,1,1,-1,-1,0)
- *
-           IF (INFO.EQ.0) THEN
-chk1mat_();
-       */
-
+       idum2 =  9;
+       //pchk1mat( M, 1, N, 2, IA, JA, DESCA, 6, 1, IDUM1, IDUM2,
+       //                 INFO );
    }
-
-
-    //if ( nprow == -1 ){
-    //     *info = -(600+ctxt_);
-    //}
-    //int M_ = 3*M; int mlocW_;  //B = Work;
-    //mlocW_ = numroc_( &M_, &nb, &myrow, &i0, &nprow );  //B = Work;
-
+    */
+      
+//   if( *info != 0 ){
+       //pxerbla( ictxt, 'PDGEQRF', -info ); //Try
+//      return 0;
+//   } 
+//   else if ( lquery ){
+          lquery =  (lWork1 == -1 || lWork2 == -1); 
+ if ( lquery ){
     /*
      * Find Workspace 
      */
-    if (lWork  == -1 ){
-         /*
-          int lwork_qr = -1, lwork_cn = -1;
-          pdgecon_ ("1", &M, H, &iH, &jH, descH, 
-                    &Anorm, &Li, 
-                    Work, &lwork_cn, Wi, &lWi, info);
-          lwork_cn  = (int)Work[0];
-          lWi = N;//(int)iWloc[0];
+      /*
+       int lwork_qr = -1, lwork_cn = -1;
+       pdgecon_ ("1", &M, H, &iH, &jH, descH, 
+                 &Anorm, &Li, 
+                 Work, &lwork_cn, Wi, &lWi, info);
+       lwork_cn  = (int)Work[0];
+       lWi = N;//(int)iWloc[0];
 
-          pdgeqrf_(&MB, &N, H, &iH, &iH, descH, 
-                   tau, Work, &lwork_qr, info);
-          lwork_qr  = Work[0];
-          lWork  = max ( lwork_cn, lwork_qr);
-          lWi = N;
-          */
-          //Work[0]  = mlocW_; //B = Work;
-          Work[0] = 3*mloc;
-          return 0;
-    }
+       pdgeqrf_(&MB, &N, H, &iH, &iH, descH, 
+                tau, Work, &lwork_qr, info);
+       lwork_qr  = Work[0];
+       lWork  = max ( lwork_cn, lwork_qr);
+       lWi = N;
+       */
+       //Work[0]  = mlocW_; //B = Work;
+       //Work[0] = 3*mloc;
+       //Work[0] = 3*M;
+       //Work[0] = ((3*M+nb)/nb)*nb;
+       Work1[0] = mloc;
+       Work2[0] = mlocW;
+   return 0;
+   } 
+
+   /* Quick return if possible */
+   if ( M == 0 || N == 0 ){
+        return 0;
+   }
 
     /**
      * Create the required workspaces
@@ -311,23 +317,28 @@ chk1mat_();
     double *A=NULL, *B=NULL;
     int descA[9], descB[9];
 
-    matsize = M*N;
-    if ( Work == NULL ) {
-	matsize *= sizeof(double);
+    //int MB3 = 3*M;
+    //int mlocW3 = numroc_( &MB3, &nb, &myrow, &i0, &nprow );
+    if ( Work1 == NULL ) {
 	A  = (double *)malloc(mloc*nloc*sizeof(double));
+	//B  = (double *)malloc(mlocW*nloc*sizeof(double));
+    }
+    if ( Work2 == NULL ) {
+	//A  = (double *)malloc(mloc*nloc*sizeof(double));
 	B  = (double *)malloc(mlocW*nloc*sizeof(double));
     }
     else {
-        B = Work;
-        A = B + 2*mloc*nloc;
+        A = Work1;
+        //B = A + mlocW3*nloc;
+        B = Work2;
     }
 
-    descinit_( descA, &M, &N, &nb, &nb, &i0, &i0, &ictxt, &mloc, info );
-    descinit_( descB, &MB, &N, &nb, &nb, &i0, &i0, &ictxt, &mlocW, info ); //B = A + mloc*nloc;
+    descinit_( descA, &M, &N, &nb, &nb, &i0, &i0, &ictxt, &mloc, &iinfo );
+    descinit_( descB, &MB, &N, &nb, &nb, &i0, &i0, &ictxt, &mlocW, &iinfo ); //B = A + mloc*nloc;
 
     //lWork = 3*M; MB = 2*M;
-    //descinit_( descA, &lWork, &N, &nb, &nb, &MB, &i0, &ictxt, &mloc, info );
-    //descinit_( descB, &lWork, &N, &nb, &nb, &i0, &i0, &ictxt, &mlocW, info ); //B = Work;
+    //descinit_( descA, &lWork, &N, &nb, &nb, &MB, &i0, &ictxt, &mloc, &iinfo );
+    //descinit_( descB, &lWork, &N, &nb, &nb, &i0, &i0, &ictxt, &mlocW, &iinfo ); //B = Work;
 
     double *tau   = (double *)malloc(nloc*sizeof(double)) ;
 
@@ -373,16 +384,16 @@ chk1mat_();
 
     alpha = 1.0; 
     pdgenm2( U, M, N, descU, B, descB, H, descH, &norm_est, tol);
-    pdlascl_( "G", &norm_est, &alpha, &M, &N, U, &i1, &i1, descU, info);
-    //pdlascl_( "G", &alpha, &norm_est, &M, &N, U, &i1, &i1, descU, info);
+    pdlascl_( "G", &norm_est, &alpha, &M, &N, U, &i1, &i1, descU, &iinfo);
+    //pdlascl_( "G", &alpha, &norm_est, &M, &N, U, &i1, &i1, descU, &iinfo);
 
 
     /* estimate condition number using QR */
     if ( optcond ){
-        pdgeqrf_(&M, &N, B, &i1, &i1, descB, tau, H, &lWork, info);
+        pdgeqrf_(&M, &N, B, &i1, &i1, descB, tau, H, &lWork1, &iinfo);
 
         sync_time_elapsed =- MPI_Wtime();
-        pdtrtri_( "U", "N", &N, B, &i1, &i1, descB, info );
+        pdtrtri_( "U", "N", &N, B, &i1, &i1, descB, &iinfo );
         sync_time_elapsed += MPI_Wtime();
         MPI_Allreduce( &sync_time_elapsed, &reduced_time_elapsed, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
 
@@ -394,14 +405,14 @@ chk1mat_();
     }
     /* estimate condition number using LU */
     else {
-        pdgetrf_ ( &M, &N, B, &i1, &i1, descB, Wi, info );
+        pdgetrf_ ( &M, &N, B, &i1, &i1, descB, Wi, &iinfo );
         if (verbose & myrank_mpi == 0) { fprintf(stderr, "LU ends\n");}
 
         int lwork_cn = -1;
-        pdgecon_ ("1", &M, B, &i1, &i1, descB, &Anorm, &Li, H, &lwork_cn, Wi, &lWi, info);
+        pdgecon_ ("1", &M, B, &i1, &i1, descB, &Anorm, &Li, H, &lwork_cn, Wi, &lWi, &iinfo);
         lwork_cn = H[0];
 
-        pdgecon_ ("1", &M, B, &i1, &i1, descB, &Anorm, &Li, H, &lwork_cn, Wi, &lWi, info);
+        pdgecon_ ("1", &M, B, &i1, &i1, descB, &Anorm, &Li, H, &lwork_cn, Wi, &lWi, &iinfo);
         Li = norm_est/1.1*Li;    
         /**
          * WARNING: The cost of the gecon is estimated with only one iteration
@@ -459,7 +470,7 @@ chk1mat_();
     if ( alloc_qr ){
          lwork_qr = -1;
          pdgeqrf_(&MB, &N, B, &i1, &i1, descB, 
-                  tau, W, &lwork_qr, info);
+                  tau, W, &lwork_qr, &iinfo);
          lwork_qr  = W[0];
          W  = (double *)malloc((lwork_qr)*sizeof(double)) ;
     }
@@ -503,7 +514,7 @@ chk1mat_();
 	     */
             pdlacpy_( "A", &M, &N, U, &i1, &i1, descU, B, &i1, &i1, descB );
             alpha = 1.0; beta = sqrt(c);
-            pdlascl_( "G", &alpha, &beta, &M, &N, B, &i1, &i1, descB, info);
+            pdlascl_( "G", &alpha, &beta, &M, &N, B, &i1, &i1, descB, &iinfo);
             alpha = 0.; beta =1.; 
             pdlaset_( "G", &M, &N, &alpha, &beta, B, &iM, &i1, descB);
 
@@ -512,8 +523,8 @@ chk1mat_();
 	     */
             sync_time_elapsed =- MPI_Wtime();
 
-            pdgeqrf_(&MB, &N, B, &i1, &i1, descB, tau, W, &lwork_qr, info);
-            pdorgqr_(&MB, &N, &N, B, &i1, &i1, descB, tau, W, &lwork_qr, info);
+            pdgeqrf_(&MB, &N, B, &i1, &i1, descB, tau, W, &lwork_qr, &iinfo);
+            pdorgqr_(&MB, &N, &N, B, &i1, &i1, descB, tau, W, &lwork_qr, &iinfo);
 
             sync_time_elapsed += MPI_Wtime();
             MPI_Allreduce( &sync_time_elapsed, &reduced_time_elapsed, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
@@ -564,7 +575,7 @@ chk1mat_();
 
             sync_time_elapsed =- MPI_Wtime();
 
-            pdposv_( "U", &M, &N, H, &i1, &i1, descH, B, &i1, &i1, descB, info);
+            pdposv_( "U", &M, &N, H, &i1, &i1, descH, B, &i1, &i1, descB, &iinfo);
 
             sync_time_elapsed += MPI_Wtime();
             MPI_Allreduce( &sync_time_elapsed, &reduced_time_elapsed, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
@@ -646,13 +657,16 @@ chk1mat_();
 	fprintf(stderr, "  \t%d  \t%d \n", itqr, itpo);
     }
 
-
     free( tau );
     if ( !optcond ){
         free( Wi );
     }
-    if ( Work == NULL ) {
+    if ( Work1 == NULL ) {
         free( A );
+        //free( B );
+    }
+    if ( Work2 == NULL ) {
+        //free( A );
         free( B );
     }
 

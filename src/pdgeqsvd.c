@@ -215,6 +215,7 @@ int pdgeqsvd( char *jobu, char *jobvt, char *eigtype,
            flops = 0.0;
 
            int i0 = 0;
+           int i1 = 1;
 	   int myrow, mycol;
 	   int mloc, nloc, mlocW; 
            int ldw; 
@@ -222,13 +223,10 @@ int pdgeqsvd( char *jobu, char *jobvt, char *eigtype,
 
            ldw = 2*n; LDW = (long)ldw * (long)n;
            
-           double *tau;
-	   //tau   = (double *)malloc(nloc*sizeof(double)) ;
-	   tau   = (double *)malloc(n*sizeof(double)) ;
 
 
            double alpha = 1.0, beta = 0.0;
-           int lwork_qr, lwork_cn, liwork_cn;
+           int lwork_cn, liwork_cn;
 
           /*
            * Find Workspace 
@@ -242,12 +240,8 @@ int pdgeqsvd( char *jobu, char *jobvt, char *eigtype,
                  lwork_cn  = Wloc[0];
                  liwork_cn = n;//(int)iWloc[0];
 
-                 lwork_qr = -1; 
-                 pdgeqrf_(&ldw, &n, Wglo, &iW, &jW, descWglo, 
-                          tau, Wloc, &lwork, info);
-                 lwork_qr  = max (Wloc[0], lwork_cn);
 
-                 if (eigtype == "r") {
+                 if (eigtype[0] == 'r') {
                     pdsyevr_( "V", "A", "L", &n, 
                               U, &iU, &jU, descU, 
                               &vl, &vu, &il, &iu, &nbeigvals, &nbeigvecs,
@@ -256,7 +250,7 @@ int pdgeqsvd( char *jobu, char *jobvt, char *eigtype,
                               Wloc, &lwork, 
                               iWloc, &liwork, info );
                  }   
-                 else if (eigtype == "d") {
+                 else if (eigtype[0] == 'd') {
                     pdsyevd_( jobvt, "L", &n, 
                               U, &iU, &jU, descU, 
                               S, 
@@ -264,13 +258,14 @@ int pdgeqsvd( char *jobu, char *jobvt, char *eigtype,
                               Wloc, &lwork, 
                               iWloc, &liwork, info );
                  }   
-                 lwork  = max ( Wloc[0], lwork_qr);
+                 lwork  = max ( Wloc[0], lwork_cn);
                  liwork = max ( (int)iWloc[0], liwork_cn);
                  Wloc[0]  = lwork;
                  iWloc[0] = liwork;
                  return 0;
            }
 
+/*
            pdgeqdwh( verbose, profqw, n, n, optcond, 
                         A, descA, // UP 
                         VT, descVT, 
@@ -280,8 +275,18 @@ int pdgeqsvd( char *jobu, char *jobvt, char *eigtype,
                         Wloc, lwork, 
                         iWloc, liwork,
                         ictxt, &flops);
+*/
+           mloc  = numroc_( &n, &nb, &myrow, &i0, &nprow );
+           nloc  = numroc_( &n, &nb, &mycol, &i0, &npcol );
+           mlocW  = numroc_( &ldw, &nb, &mycol, &i0, &npcol );
+           pdgeqdwh( n, n,
+                        A, iA, jA, descA, // UP 
+                        U, iU, jU, descU, // H 
+                        VT, mloc,
+                        Wglo, mlocW,
+                        &info);
 
-           if (eigtype == "r"){
+           if (eigtype[0] == 'r'){
               pdsyevr_( "V", "A", "L", &n, 
                         U, &iU, &jU, descU, 
                         &vl, &vu, &il, &iu, &nbeigvals, &nbeigvecs,
@@ -291,8 +296,8 @@ int pdgeqsvd( char *jobu, char *jobvt, char *eigtype,
                         iWloc, &liwork, info );
               
            }
-           else if(eigtype == "d"){
-              pdsyevd_( "V", "L", &n, 
+           else if(eigtype[0] == 'd'){
+              pdsyevd_( jobvt, "L", &n, 
                         U, &iU, &jU, descU, 
                         S, 
                         VT, &iVT, &jVT, descVT, 
@@ -301,7 +306,7 @@ int pdgeqsvd( char *jobu, char *jobvt, char *eigtype,
 
 
            }
-           else if(eigtype == "e"){
+           else if(eigtype[0] == 'e'){
 	      Cblacs_gridinfo( ictxt, &nprow, &npcol, &myrow, &mycol );
 	      mloc  = numroc_( &n, &nb, &myrow, &i0, &nprow );
 	      nloc  = numroc_( &n, &nb, &mycol, &i0, &npcol );

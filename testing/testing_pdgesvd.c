@@ -290,10 +290,10 @@ int main(int argc, char **argv) {
 	    D  = (double *)malloc(n*sizeof(double)) ;
 	    Sigma = (double *)calloc(mloc*nloc,sizeof(double)) ;
 
-            if( qwmr || qwdc || qwel ){
+            //if( qwmr || qwdc || qwel ){
 	       descinit_( descWglo, &ldw, &n, &nb, &nb, &i0, &i0, &ictxt, &mlocW, &info );
 	       Wglo  = (double *)malloc(mlocW*nloc*sizeof(double)) ;
-            }
+            //}
 
 	    U      = (double *)malloc(mloc*nloc*sizeof(double)) ;
 	    VT      = (double *)malloc(mloc*nloc*sizeof(double)) ;
@@ -754,7 +754,7 @@ int main(int argc, char **argv) {
 	    free( U );
 	    free( VT );
 	    free( S );
-            if( qwmr || qwdc || qwel )
+            //if( qwmr || qwdc || qwel )
 	       free( Wglo );
             if (verbose & myrank_mpi == 0) fprintf(stderr, "Free matrices done\n");
         } // End loop over range
