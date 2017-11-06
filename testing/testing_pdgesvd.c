@@ -190,9 +190,9 @@ int main(int argc, char **argv) {
         int i0 = 0, i1 = 1;
         int lwork, liwork, *iWloc=NULL, ldw;
         long int LDW;
-	int descA[9], descAcpy[9], descU[9], descVT[9], descWglo[9], descH[9], descSigma[9];
+	int descA[9], descAcpy[9], descU[9], descVT[9], descH[9], descSigma[9];
 	double *A=NULL, *Acpy=NULL, *U=NULL, *VT=NULL, *S=NULL, *Wloc=NULL, *D=NULL, *C=NULL;
-	double *H=NULL, *tau=NULL, *Wglo=NULL;
+	double *H=NULL, *tau=NULL;
         double *Sigma=NULL;
 
 
@@ -290,10 +290,6 @@ int main(int argc, char **argv) {
 	    D  = (double *)malloc(n*sizeof(double)) ;
 	    Sigma = (double *)calloc(mloc*nloc,sizeof(double)) ;
 
-            //if( qwmr || qwdc || qwel ){
-	       descinit_( descWglo, &ldw, &n, &nb, &nb, &i0, &i0, &ictxt, &mlocW, &info );
-	       Wglo  = (double *)malloc(mlocW*nloc*sizeof(double)) ;
-            //}
 
 	    U      = (double *)malloc(mloc*nloc*sizeof(double)) ;
 	    VT      = (double *)malloc(mloc*nloc*sizeof(double)) ;
@@ -387,13 +383,11 @@ int main(int argc, char **argv) {
                      Wloc   = (double *)calloc(1,sizeof(double));
                      iWloc  = (int *)calloc(1,sizeof(int));
                      pdgeqsvd( jobu, jobvt, eigtype,  
-                                nprow, npcol, nb, ictxt, 
                                 n, n, 
                                 A, i1, i1, descA, 
                                 S, 
                                 U,     i1,     i1,  descU,
                                 VT,    i1,     i1,  descVT,
-                                Wglo,  i1,     i1,  descWglo,
                                 Wloc,  lwork,
                                 iWloc, liwork, &my_info_facto);
                      lwork  = (int)Wloc[0];
@@ -405,13 +399,11 @@ int main(int argc, char **argv) {
                       */
 
                      pdgeqsvd( jobu, jobvt, eigtype,
-                                nprow, npcol, nb, ictxt, 
                                 n, n, 
                                 A, i1, i1, descA, 
                                 S, 
                                 U,     i1,     i1,  descU,
                                 VT,    i1,     i1,  descVT,
-                                Wglo,  i1,     i1,  descWglo,
                                 Wloc,  lwork,
                                 iWloc, liwork, &my_info_facto);
 
@@ -674,15 +666,15 @@ int main(int argc, char **argv) {
                               A, &i1, &i1, descA);
                      pdlacpy_( "All", &n, &n, 
                               Acpy, &i1, &i1, descAcpy, 
-                              Wglo, &i1, &i1, descWglo ); 
+                              H, &i1, &i1, descH ); 
                      beta = -1.0;
                      pdgemm_( "N", "N", &n, &n, &n, 
                               &alpha, 
                               A, &i1, &i1, descA, 
                               VT, &i1, &i1, descVT, 
                               &beta, 
-                              Wglo, &i1, &i1, descWglo);
-                     my_berr = pdlange_ ( "f", &n, &n, Wglo, &i1, &i1, descWglo, Wloc) / (frobA * n);
+                              H, &i1, &i1, descH);
+                     my_berr = pdlange_ ( "f", &n, &n, H, &i1, &i1, descH, Wloc) / (frobA * n);
 
                         /* Accuracy of singular values */
                         for(i=0; i < n ; i++ )
@@ -755,7 +747,6 @@ int main(int argc, char **argv) {
 	    free( VT );
 	    free( S );
             //if( qwmr || qwdc || qwel )
-	       free( Wglo );
             if (verbose & myrank_mpi == 0) fprintf(stderr, "Free matrices done\n");
         } // End loop over range
 
