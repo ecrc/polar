@@ -1,3 +1,10 @@
+/**
+ *
+ * Copyright (c) 2017, King Abdullah University of Science and Technology
+ * All rights reserved.
+ *
+ **/
+
 #include <unistd.h>
 #include <sys/time.h>
 #include <sys/resource.h>

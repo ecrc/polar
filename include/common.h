@@ -1,3 +1,9 @@
+/**
+ *
+ * Copyright (c) 2017, King Abdullah University of Science and Technology
+ * All rights reserved.
+ *
+ **/
 
 #include <stdlib.h>
 #include <stdio.h>

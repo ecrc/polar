@@ -1,10 +1,17 @@
 /**
  *
+ * Copyright (c) 2017, King Abdullah University of Science and Technology
+ * All rights reserved.
+ *
+ **/
+
+/**
+ *
  * @file flops.h
  *
  *  File provided by Univ. of Tennessee,
  *
- * @version 1.0.0
+ * @version 2.0.0
  * @author Mathieu Faverge
  * @date 2010-12-20
  *

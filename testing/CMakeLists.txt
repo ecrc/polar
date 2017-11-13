@@ -47,8 +47,8 @@ endif()
 math( EXPR _pq "${_p} * ${_q}" )
 
 # Add basic tests. To run them type: 'make test' in build directory
-add_test( NAME "testing_pdgesvd:A" COMMAND mpirun -np ${_pq} testing_pdgesvd --nprow ${_p} --npcol ${_q} --nb 64 --n_range 512:512:512 --niter 3 --check --qwmr )
-add_test( NAME "testing_pdgesvd:B" COMMAND mpirun -np ${_pq} testing_pdgesvd --nprow ${_p} --npcol ${_q} --nb 64 --n_range 512:512:512 --niter 3 --check --qwdc )
-add_test( NAME "testing_pdgesvd:C" COMMAND mpirun -np ${_pq} testing_pdgesvd --nprow ${_p} --npcol ${_q} --nb 64 --n_range 512:512:512 --niter 3 --check --qwel )
+# add_test( NAME "testing_pdgesvd:A" COMMAND mpirun -np ${_pq} testing_pdgesvd --nprow ${_p} --npcol ${_q} --nb 64 --n_range 512:512:512 --niter 3 --check --qwmr )
+# add_test( NAME "testing_pdgesvd:B" COMMAND mpirun -np ${_pq} testing_pdgesvd --nprow ${_p} --npcol ${_q} --nb 64 --n_range 512:512:512 --niter 3 --check --qwdc )
+# add_test( NAME "testing_pdgesvd:C" COMMAND mpirun -np ${_pq} testing_pdgesvd --nprow ${_p} --npcol ${_q} --nb 64 --n_range 512:512:512 --niter 3 --check --qwel )
 add_test( NAME "testing_pdgeqdwh:A" COMMAND mpirun -np ${_pq} testing_pdgeqdwh --nprow ${_p} --npcol ${_q} --nb 64 --n_range 512:512:512 --niter 3 --check )
 

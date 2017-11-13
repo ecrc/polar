@@ -18,9 +18,8 @@ option( SHARED_NETLIBSCALAPACK "Build NETLIB-SCALAPACK as shared library." ${BUI
 option( USE_PARALLEL_BLAS "If possible, prefer parallel blas libraries" ON )
 set(EXTRA_LIBS "" CACHE STRING "Additional libraries that may be needed to compile/link" )
 
-# Version
-# Number 1.0.0 is temptative, may differ from actual release.
-SET( QDWH_VERSION_MAJOR 1 )
+# Version 2.0.0
+SET( QDWH_VERSION_MAJOR 2 )
 SET( QDWH_VERSION_MINOR 0 )
 SET( QDWH_VERSION_PATCH 0 )
 set( QDWH_VERSION "${QDWH_VERSION_MAJOR}.${QDWH_VERSION_MINOR}.${QDWH_VERSION_PATCH}" )

@@ -1,7 +1,7 @@
 # Define source files
 set( QDWH_SRC pdgenm2.c
               pdgeqdwh.c
-              pdgeqsvd.c )
+              )
 
 
 list( APPEND CMAKE_SHARED_LINKER_FLAGS "-Wl,--enable-new-dtags")

@@ -1,3 +1,25 @@
+/**
+ *
+ * Copyright (c) 2017, King Abdullah University of Science and Technology
+ * All rights reserved.
+ *
+ **/
+
+/**
+ *
+ * @file timing.c
+ *
+ *  QDWH is a high performance software framework for computing 
+ *  the polar decomposition on distributed-memory manycore systems provided by KAUST
+ *
+ * @version 2.0.0
+ * @author Dalal Sukkari
+ * @author Hatem Ltaief
+ * @date 2017-11-13
+ *
+ **/
+
+#include <stdlib.h>
 int
 get_range(char *range, int *start_p, int *stop_p, int *step_p) {
     char *s, *s1, buf[21];
