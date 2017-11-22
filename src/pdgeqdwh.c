@@ -107,21 +107,21 @@
  *  N       (global input) INTEGER
  *          The number of columns of the input matrix A.  N >= 0.
  *
- *  U       (local input/output) block cyclic DOUBLE PRECISION
+ *  A       (local input/output) block cyclic DOUBLE PRECISION
  *          array,
  *          global dimension (M, N), local dimension (MP, NQ)
  *          On entry, this array contains the matrix to be factorized 
- *          On exit, it contain the orthogonal polar factor U_P
- *  IU      (global input) INTEGER
+ *          On exit, it contain the orthogonal polar factor A_P
+ *  IA      (global input) INTEGER
  *          The row index in the global array A indicating the first
  *          row of sub( A ).
  *
- *  JU      (global input) INTEGER
+ *  JA      (global input) INTEGER
  *          The column index in the global array A indicating the
  *          first column of sub( A ).
  *
- *  DESCU   (global input) INTEGER array of dimension DLEN_
- *          The array descriptor for the distributed matrix U.
+ *  DESCA   (global input) INTEGER array of dimension DLEN_
+ *          The array descriptor for the distributed matrix A.
  *
  *  H       (local output) block cyclic DOUBLE PRECISION
  *          array,
@@ -129,12 +129,12 @@
  *          On exit, this array contains the symmetric positive semidefinite polar factor H 
  *
  *  IH      (global input) INTEGER
- *          The row index in the global array A indicating the first
- *          row of sub( A ).
+ *          The row index in the global array H indicating the first
+ *          row of sub( H ).
  *
  *  JH      (global input) INTEGER
- *          The column index in the global array A indicating the
- *          first column of sub( A ).
+ *          The column index in the global array H indicating the
+ *          first column of sub( H ).
  *
  *  DESCH   (global input) INTEGER array of dimension DLEN_
  *          The array descriptor for the distributed matrix H.
