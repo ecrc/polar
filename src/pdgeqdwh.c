@@ -163,7 +163,7 @@ double tol1;
 double tol3;
 
 int pdgeqdwh( int M, int N, 
-	      double *U, int iU, int jU, int *descU, 
+	      double *A, int iA, int jA, int *descA, 
               double *H, int iH, int jH, int *descH,
               double *Work1, int lWork1, 
               double *Work2, int lWork2, 
@@ -202,9 +202,9 @@ int pdgeqdwh( int M, int N,
     /*
      * Get the grid parameters
      */
-    ictxt = descU[ctxt_];
+    ictxt = descA[ctxt_];
     Cblacs_get( -1, 0, &ictxt );
-    nb = descU[nb_];
+    nb = descA[nb_];
     Cblacs_gridinfo( ictxt, &nprow, &npcol, &myrow, &mycol );
     mloc  = numroc_( &M, &nb, &myrow, &i0, &nprow );
     nloc  = numroc_( &N, &nb, &mycol, &i0, &npcol );
@@ -230,9 +230,9 @@ int pdgeqdwh( int M, int N,
 
        int i2 = 2, i6 = 6, i10 = 10, i_1;
        int idum1, idum2;
-       chk1mat_(&M, &i1, &N, &i2, &iU, &jU, descU, &i6, info);
+       chk1mat_(&M, &i1, &N, &i2, &iA, &jA, descA, &i6, info);
        chk1mat_(&M, &i1, &N, &i2, &iH, &jH, descH, &i10, info);
-       //igamx2d_(descU[ctxt_], "A", " ", &i1, &i1, info, &i1, &i1, &i1, &i_1, &i_1, &i0);// TRY
+       //igamx2d_(descA[ctxt_], "A", " ", &i1, &i1, info, &i1, &i1, &i1, &i_1, &i_1, &i0);// TRY
 
           lquery =  (lWork1 == -1 || lWork2 == -1); 
        if (*info == 0){
@@ -298,13 +298,13 @@ int pdgeqdwh( int M, int N,
      * Needed for debugging the code
      */
 
-    double *A=NULL, *B=NULL;
-    int descA[9], descB[9];
+    double *U=NULL, *B=NULL;
+    int descU[9], descB[9];
 
     //int MB3 = 3*M;
     //int mlocW3 = numroc_( &MB3, &nb, &myrow, &i0, &nprow );
     if ( Work1 == NULL ) {
-	A  = (double *)malloc(mloc*nloc*sizeof(double));
+	U  = (double *)malloc(mloc*nloc*sizeof(double));
 	//B  = (double *)malloc(mlocW*nloc*sizeof(double));
     }
     if ( Work2 == NULL ) {
@@ -312,12 +312,12 @@ int pdgeqdwh( int M, int N,
 	B  = (double *)malloc(mlocW*nloc*sizeof(double));
     }
     else {
-        A = Work1;
+        U = Work1;
         //B = A + mlocW3*nloc;
         B = Work2;
     }
 
-    descinit_( descA, &M, &N, &nb, &nb, &i0, &i0, &ictxt, &mloc, &iinfo );
+    descinit_( descU, &M, &N, &nb, &nb, &i0, &i0, &ictxt, &mloc, &iinfo );
     descinit_( descB, &MB, &N, &nb, &nb, &i0, &i0, &ictxt, &mlocW, &iinfo ); //B = A + mloc*nloc;
 
     //lWork = 3*M; MB = 2*M;
@@ -349,9 +349,9 @@ int pdgeqdwh( int M, int N,
     if (verbose & myrank_mpi == 0) { fprintf(stderr, "Finish preparing workspace for QDWH\n");}
 
     /*
-     * Save copy of U in A ==> H = U'*A
+     * Save copy of A ==> H = U'*A
      */
-    pdlacpy_ ( "A", &M, &N, U, &i1, &i1, descU, A, &i1, &i1, descA );
+    pdlacpy_ ( "A", &M, &N, A, &i1, &i1, descA, U, &i1, &i1, descU );
 
     if (verbose & myrank_mpi == 0) { fprintf(stderr, "Cond estimate starts\n");}
     /*
@@ -361,15 +361,15 @@ int pdgeqdwh( int M, int N,
     litime = 0.0;
     if(prof) {litime =- MPI_Wtime();}
 
-    pdlacpy_ ( "A", &M, &N, U, &i1, &i1, descU, B, &i1, &i1, descB );
+    pdlacpy_ ( "A", &M, &N, A, &i1, &i1, descA, B, &i1, &i1, descB );
     if (verbose & myrank_mpi == 0) { fprintf(stderr, "lacpy ends\n");}
     Anorm = pdlange_ ( "1", &M, &N, U, &i1, &i1, descU, H);
     if (verbose & myrank_mpi == 0) { fprintf(stderr, "dlange ends\n");}
 
     alpha = 1.0; 
     pdgenm2( U, M, N, descU, B, descB, H, descH, &norm_est, tol);
-    pdlascl_( "G", &norm_est, &alpha, &M, &N, U, &i1, &i1, descU, &iinfo);
-    //pdlascl_( "G", &alpha, &norm_est, &M, &N, U, &i1, &i1, descU, &iinfo);
+    pdlascl_( "G", &norm_est, &alpha, &M, &N, A, &i1, &i1, descA, &iinfo);
+    //pdlascl_( "G", &alpha, &norm_est, &M, &N, A, &i1, &i1, descA, &iinfo);
 
 
     /* estimate condition number using QR */
@@ -489,14 +489,14 @@ int pdgeqdwh( int M, int N,
 
 	    /* Copy U into C to check the convergence of QDWH */
             if (it >= itconv ){
-                pdlacpy_( "A", &M, &N, U, &i1, &i1, descU, H, &i1, &i1, descH );
+                pdlacpy_( "A", &M, &N, A, &i1, &i1, descA, H, &i1, &i1, descH );
             }
 
 	    /**
 	     * Generate the matrix B = [ B1 ] = [ sqrt(c) * U ]
 	     *                         [ B2 ] = [ Id          ]
 	     */
-            pdlacpy_( "A", &M, &N, U, &i1, &i1, descU, B, &i1, &i1, descB );
+            pdlacpy_( "A", &M, &N, A, &i1, &i1, descA, B, &i1, &i1, descB );
             alpha = 1.0; beta = sqrt(c);
             pdlascl_( "G", &alpha, &beta, &M, &N, B, &i1, &i1, descB, &iinfo);
             alpha = 0.; beta =1.; 
@@ -519,7 +519,7 @@ int pdgeqdwh( int M, int N,
 	     */
             alpha = (a-b/c)/sqrt(c); beta = (b/c);
             pdgemm_( "N", "T", &M, &N, &N, &alpha, B, &i1, &i1, descB, B, &iM, &i1, 
-                     descB, &beta, U, &i1, &i1, descU);
+                     descB, &beta, A, &i1, &i1, descA);
 
             if(prof) {qrtime += MPI_Wtime();}
 
@@ -545,8 +545,8 @@ int pdgeqdwh( int M, int N,
 
             sync_time_elapsed =- MPI_Wtime();
 
-            pdgemm_( "T", "N", &M, &N, &N, &c, U, &i1, &i1, descU, U, &i1, &i1, 
-                     descU, &beta, H, &i1, &i1, descH);
+            pdgemm_( "T", "N", &M, &N, &N, &c, A, &i1, &i1, descA, A, &i1, &i1, 
+                     descA, &beta, H, &i1, &i1, descH);
 
             sync_time_elapsed += MPI_Wtime();
             MPI_Allreduce( &sync_time_elapsed, &reduced_time_elapsed, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
@@ -555,7 +555,7 @@ int pdgeqdwh( int M, int N,
 	     * Solve Q1 x = Q2, with Q2 = U
 	     */
             alpha = 1.0; beta = 0.0;
-            pdgeadd_( "T", &M, &N, &alpha, U, &i1, &i1, descU, &beta, B, &i1, &i1, descB);
+            pdgeadd_( "T", &M, &N, &alpha, A, &i1, &i1, descA, &beta, B, &i1, &i1, descB);
 
             sync_time_elapsed =- MPI_Wtime();
 
@@ -566,14 +566,14 @@ int pdgeqdwh( int M, int N,
 
 	    /* Copy U into H to check the convergence of QDWH */
             if (it >= itconv ){
-                pdlacpy_( "A", &M, &N, U, &i1, &i1, descU, H, &i1, &i1, descH );
+                pdlacpy_( "A", &M, &N, A, &i1, &i1, descA, H, &i1, &i1, descH );
             }
 
 	    /**
 	     * Compute U =  (a-b/c) * Q2' + (b/c) * U
 	     */
             alpha = (a-b/c); beta = (b/c);
-            pdgeadd_ ( "T", &M, &N, &alpha, B, &i1, &i1, descB, &beta, U, &i1, &i1, descU);
+            pdgeadd_ ( "T", &M, &N, &alpha, B, &i1, &i1, descB, &beta, A, &i1, &i1, descA);
 
             if(prof) {potime += MPI_Wtime();}
 
@@ -593,7 +593,7 @@ int pdgeqdwh( int M, int N,
         conv = 10.;
         if(it >= itconv ){
             alpha = 1.0; beta = -1.0;
-            pdgeadd_ ( "N", &M, &N, &alpha, U, &i1, &i1, descU, &beta, H, &i1, &i1, descH);
+            pdgeadd_ ( "N", &M, &N, &alpha, A, &i1, &i1, descA, &beta, H, &i1, &i1, descH);
 
             sync_time_elapsed =- MPI_Wtime();
 
@@ -615,8 +615,8 @@ int pdgeqdwh( int M, int N,
      if(prof) {Htime =- MPI_Wtime();}
 
      alpha = 1.0; beta = 0.0;
-     pdgemm_( "T", "N", &M, &N, &N, &alpha, U, &i1, &i1, descU, A, &i1, &i1, 
-              descA, &beta, H, &i1, &i1, descH);
+     pdgemm_( "T", "N", &M, &N, &N, &alpha, A, &i1, &i1, descA, U, &i1, &i1, 
+              descU, &beta, H, &i1, &i1, descH);
      pdlacpy_( "A", &M, &N, H, &i1, &i1, descH, B, &i1, &i1, descB );
      alpha = 0.5; 
      pdgeadd_ ( "T", &M, &N, &alpha, B, &i1, &i1, descB, &alpha, H, &i1, &i1, descH);
@@ -646,7 +646,7 @@ int pdgeqdwh( int M, int N,
         free( Wi );
     }
     if ( Work1 == NULL ) {
-        free( A );
+        free( U );
         //free( B );
     }
     if ( Work2 == NULL ) {
