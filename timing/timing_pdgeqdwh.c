@@ -297,13 +297,13 @@ int main(int argc, char **argv) {
         lWork1 = -1; 
         lWork2 = -1; 
 
-        pdgeqdwh( n, n,  
+        pdgeqdwh( n, n, "V", 
                   A, i1, i1, descA, 
                   H, i1, i1, descH, 
                   //NULL, lWork, //debug
                   Wloc1, lWork1,
                   Wloc2, lWork2,
-                  &info_facto_qw);
+                  &my_info_facto);
 
         lWork1 = Wloc1[0];
         lWork2 = Wloc2[0];
@@ -335,13 +335,13 @@ int main(int argc, char **argv) {
             my_elapsed_polarqdwh   = 0.0;
             my_elapsed_polarqdwh   =- MPI_Wtime();
 
-            pdgeqdwh( n, n,  
+            pdgeqdwh( n, n, "V", 
                       A, i1, i1, descA, 
                       H, i1, i1, descH, 
                       //NULL, lWork, //debug
                       Wloc1, lWork1,
                       Wloc2, lWork2,
-                      &info_facto_qw);
+                      &my_info_facto);
 
             my_elapsed_polarqdwh   += MPI_Wtime();
             MPI_Allreduce( &my_elapsed_polarqdwh, &elapsed_polarqdwh, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);

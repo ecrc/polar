@@ -291,13 +291,13 @@ int main(int argc, char **argv) {
         lWork1 = -1; 
         lWork2 = -1; 
 
-        pdgeqdwh( n, n,  
+        pdgeqdwh( n, n, "V", 
                   A, i1, i1, descA, 
                   H, i1, i1, descH, 
                   //NULL, lWork, //debug
                   Wloc1, lWork1,
                   Wloc2, lWork2,
-                  &info_facto_qw);
+                  &my_info_facto);
 
         lWork1 = Wloc1[0];
         lWork2 = Wloc2[0];
@@ -327,13 +327,13 @@ int main(int argc, char **argv) {
              * A contains the orthogonal polar factor.
              */
 
-            pdgeqdwh( n, n,  
+            pdgeqdwh( n, n, "V", 
                       A, i1, i1, descA, 
                       H, i1, i1, descH, 
                       //NULL, lWork, //debug
                       Wloc1, lWork1,
                       Wloc2, lWork2,
-                      &info_facto_qw);
+                      &my_info_facto);
 
 	    MPI_Allreduce( &my_info_facto, &info_facto_qw, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
 

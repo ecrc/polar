@@ -107,11 +107,19 @@
  *  N       (global input) INTEGER
  *          The number of columns of the input matrix A.  N >= 0.
  *
+ *  JOBH    (global input) CHARACTER*1
+ *          Specifies options for computing H:
+ *          = 'V':  the first SIZE columns of H (the symmetric positive
+ *                  semidefinite polar factor) are returned in the array H;
+ *          = 'N':  no columns of H (no symmetric positive semidefinite polar factor) are
+ *                  computed.
+ *
  *  A       (local input/output) block cyclic DOUBLE PRECISION
  *          array,
  *          global dimension (M, N), local dimension (MP, NQ)
  *          On entry, this array contains the matrix to be factorized 
  *          On exit, it contain the orthogonal polar factor A_P
+ *
  *  IA      (global input) INTEGER
  *          The row index in the global array A indicating the first
  *          row of sub( A ).
@@ -162,7 +170,7 @@ double eps;
 double tol1;
 double tol3;
 
-int pdgeqdwh( int M, int N, 
+int pdgeqdwh( int M, int N, char *jobh, 
 	      double *A, int iA, int jA, int *descA, 
               double *H, int iH, int jH, int *descH,
               double *Work1, int lWork1, 
@@ -192,6 +200,7 @@ int pdgeqdwh( int M, int N,
     int myrow, mycol, nprow, npcol;   
     int ctxt_ = 1, nb_ = 5;
     int ictxt;
+    int wantH;
 
     int lWi, lwork_qr, lwork_cn;
     int *Wi = (int *)calloc(1,sizeof(int)) ;
@@ -210,58 +219,69 @@ int pdgeqdwh( int M, int N,
     nloc  = numroc_( &N, &nb, &mycol, &i0, &npcol );
     mlocW = numroc_( &MB, &nb, &myrow, &i0, &nprow );
  
-   int lmin, lquery;
-   //*info = 0; 
+   int lmin1, lmin2, lquery;
+   *info = 0; 
    lquery =  (lWork1 == -1 || lWork2 == -1); 
+
    /*
     * Test the input parameters
+    */
    if( nprow == -1 ){
-       *info = -(600+ctxt_);
+       *info = -(800+ctxt_);
    }
    else { 
-       if ( M < 0 || N < 0 ){
-	   fprintf(stderr, "error(m or n is negative)") ;
+       if ( M < N ){
+	   fprintf(stderr, "error(M >= N is required)") ;
 	   return -1;
        }
-       if ( M < N ){
-	   fprintf(stderr, "error(m >= n is required)") ;
-	   return -1;
+       if (jobh[0] == 'V'){
+           wantH = 1;
+       }
+       else {
+           wantH = 0;
        }
 
-       int i2 = 2, i6 = 6, i10 = 10, i_1;
+       int i2 = 2, i6 = 6, i10 = 10, i_1 = -1;
        int idum1, idum2;
        chk1mat_(&M, &i1, &N, &i2, &iA, &jA, descA, &i6, info);
-       chk1mat_(&M, &i1, &N, &i2, &iH, &jH, descH, &i10, info);
-       //igamx2d_(descA[ctxt_], "A", " ", &i1, &i1, info, &i1, &i1, &i1, &i_1, &i_1, &i0);// TRY
+       if (wantH){
+          chk1mat_(&M, &i1, &N, &i2, &iH, &jH, descH, &i10, info);
+       }
+       //igamx2d_(descA[ctxt_], "A", " ", &i1, &i1, info, &i1, &i1, &i1, &i_1, &i_1, &i0);
 
-          lquery =  (lWork1 == -1 || lWork2 == -1); 
+       lquery =  (lWork1 == -1 || lWork2 == -1); 
        if (*info == 0){
-          lmin = 3*M;
-          Work[0] = lmin;
-          lquery =  (lWork == -1); 
-          if( lWork < lmin & !lquery ){
+          lmin1 = mloc;
+          lmin2 = mlocW;
+          Work1[0] = lmin1;
+          Work2[0] = lmin2;
+          lquery =  (lWork1 == -1 || lWork2 == -1); 
+          if( (lWork1 < lmin1 || lWork2 < lmin2) & !lquery ){
               *info = -9;
           }
        }
-       if( lWork == -1 ) {
+       if( lWork1 == -1 || lWork2 == -1) {
              idum1 = -1;
        }
        else {
              idum1 =  1;
        }
        idum2 =  9;
-       //pchk1mat( M, 1, N, 2, IA, JA, DESCA, 6, 1, IDUM1, IDUM2,
-       //                 INFO );
+       pchk1mat_( &M, &i1, &N, &i2, &iA, &jA, descA, &i6, &i1, &idum1, &idum2,
+                        info );
+       if (wantH){
+          pchk1mat_( &M, &i1, &N, &i2, &iH, &jH, descH, &i6, &i1, &idum1, &idum2,
+                        info );
+       }
    }
-    */
       
-//   if( *info != 0 ){
-       //pxerbla( ictxt, 'PDGEQRF', -info ); //Try
-//      return 0;
-//   } 
-//   else if ( lquery ){
-          lquery =  (lWork1 == -1 || lWork2 == -1); 
- if ( lquery ){
+   if( *info != 0 ){
+       pxerbla_( ictxt, "PDGEQDWH", -1*info[0] ); 
+       return 0;
+   }
+   else if ( lquery ){
+    //lquery =  (lWork1 == -1 || lWork2 == -1); 
+    //if ( lquery ){
     /*
      * Find Workspace 
      */
@@ -285,7 +305,7 @@ int pdgeqdwh( int M, int N,
        //Work[0] = ((3*M+nb)/nb)*nb;
        Work1[0] = mloc;
        Work2[0] = mlocW;
-   return 0;
+       return 0;
    } 
 
    /* Quick return if possible */
