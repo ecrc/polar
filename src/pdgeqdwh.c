@@ -101,18 +101,18 @@
  *
  *  Arguments
  *************
+ *  JOBH    (global input) CHARACTER*1
+ *          Specifies options for computing H:
+ *          = 'H':  the H (the symmetric positive
+ *                  semidefinite polar factor) are returned in the array H;
+ *          = 'N':  no columns of H (no symmetric positive semidefinite polar factor) are
+ *                  computed.
+ *
  *  M       (global input) INTEGER
  *          The number of rows of the input matrix A.  M >= 0.
  *
  *  N       (global input) INTEGER
  *          The number of columns of the input matrix A.  N >= 0.
- *
- *  JOBH    (global input) CHARACTER*1
- *          Specifies options for computing H:
- *          = 'V':  the first SIZE columns of H (the symmetric positive
- *                  semidefinite polar factor) are returned in the array H;
- *          = 'N':  no columns of H (no symmetric positive semidefinite polar factor) are
- *                  computed.
  *
  *  A       (local input/output) block cyclic DOUBLE PRECISION
  *          array,
@@ -170,7 +170,7 @@ double eps;
 double tol1;
 double tol3;
 
-int pdgeqdwh( int M, int N, char *jobh, 
+int pdgeqdwh( char *jobh, int M, int N,
 	      double *A, int iA, int jA, int *descA, 
               double *H, int iH, int jH, int *descH,
               double *Work1, int lWork1, 
@@ -227,25 +227,27 @@ int pdgeqdwh( int M, int N, char *jobh,
     * Test the input parameters
     */
    if( nprow == -1 ){
-       *info = -(800+ctxt_);
+       *info = -(700+ctxt_);
    }
    else { 
        if ( M < N ){
 	   fprintf(stderr, "error(M >= N is required)") ;
 	   return -1;
        }
-       if (jobh[0] == 'V'){
+       if (jobh[0] == 'H' || jobh[0] == 'h'){
            wantH = 1;
        }
        else {
            wantH = 0;
        }
 
-       int i2 = 2, i6 = 6, i10 = 10, i_1 = -1;
-       int idum1, idum2;
-       chk1mat_(&M, &i1, &N, &i2, &iA, &jA, descA, &i6, info);
+       int i2 = 2, i3 = 3, i7 = 7, i11 = 11, i_1 = -1;
+       int *idum1, *idum2;
+       idum1 = (int *)malloc(2*sizeof(int)) ;
+       idum2 = (int *)malloc(2*sizeof(int)) ;
+       chk1mat_(&M, &i2, &N, &i3, &iA, &jA, descA, &i7, info);
        if (wantH){
-          chk1mat_(&M, &i1, &N, &i2, &iH, &jH, descH, &i10, info);
+          chk1mat_(&M, &i2, &N, &i3, &iH, &jH, descH, &i11, info);
        }
        //igamx2d_(descA[ctxt_], "A", " ", &i1, &i1, info, &i1, &i1, &i1, &i_1, &i_1, &i0);
 
@@ -260,17 +262,20 @@ int pdgeqdwh( int M, int N, char *jobh,
               *info = -9;
           }
        }
+
+       idum1[0] = wantH;
        if( lWork1 == -1 || lWork2 == -1) {
-             idum1 = -1;
+             idum1[1] = -1;
        }
        else {
-             idum1 =  1;
+             idum1[1] =  1;
        }
-       idum2 =  9;
-       pchk1mat_( &M, &i1, &N, &i2, &iA, &jA, descA, &i6, &i1, &idum1, &idum2,
+       idum2[0] =  1;
+       idum2[1] =  15;
+       pchk1mat_( &M, &i2, &N, &i3, &iA, &jA, descA, &i7, &i2, &idum1, &idum2,
                         info );
-       if (wantH){
-          pchk1mat_( &M, &i1, &N, &i2, &iH, &jH, descH, &i6, &i1, &idum1, &idum2,
+       if ((*info == 0) && wantH){
+          pchk1mat_( &M, &i2, &N, &i3, &iH, &jH, descH, &i11, &i0, &idum1, &idum2,
                         info );
        }
    }
