@@ -162,6 +162,10 @@
  *
  *  INFO (global output) INTEGER
  *          = 0:  successful exit
+ *          < 0:  If the i-th argument is an array and the j-entry had
+ *                an illegal value, then INFO = -(i*100+j), if the i-th
+ *                argument is a scalar and had an illegal value, then
+ *                INFO = -i.
  *
  ******************************************************************************/
 
@@ -219,9 +223,9 @@ int pdgeqdwh( char *jobh, int M, int N,
     nloc  = numroc_( &N, &nb, &mycol, &i0, &npcol );
     mlocW = numroc_( &MB, &nb, &myrow, &i0, &nprow );
  
-   int lmin1, lmin2, lquery;
-   *info = 0; 
-   lquery =  (lWork1 == -1 || lWork2 == -1); 
+    int lmin1, lmin2, lquery;
+    *info = 0; 
+    lquery =  (lWork1 == -1 || lWork2 == -1); 
 
    /*
     * Test the input parameters
@@ -259,7 +263,7 @@ int pdgeqdwh( char *jobh, int M, int N,
           Work2[0] = lmin2;
           lquery =  (lWork1 == -1 || lWork2 == -1); 
           if( (lWork1 < lmin1 || lWork2 < lmin2) & !lquery ){
-              *info = -9;
+              *info = -13;
           }
        }
 
