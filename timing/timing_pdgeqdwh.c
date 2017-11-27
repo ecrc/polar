@@ -297,7 +297,7 @@ int main(int argc, char **argv) {
         lWork1 = -1; 
         lWork2 = -1; 
 
-        pdgeqdwh( n, n, "V", 
+        pdgeqdwh( "H", n, n,
                   A, i1, i1, descA, 
                   H, i1, i1, descH, 
                   //NULL, lWork, //debug
@@ -335,7 +335,7 @@ int main(int argc, char **argv) {
             my_elapsed_polarqdwh   = 0.0;
             my_elapsed_polarqdwh   =- MPI_Wtime();
 
-            pdgeqdwh( n, n, "V", 
+            pdgeqdwh( "H", n, n,
                       A, i1, i1, descA, 
                       H, i1, i1, descH, 
                       //NULL, lWork, //debug
