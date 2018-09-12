@@ -278,16 +278,16 @@ int pdgeqdwh( char *jobh, int m, int n,
        }
        idum2[0] =  1;
        idum2[1] =  15;
-       pchk1mat_( &m, &i2, &n, &i3, &iA, &jA, descA, &i7, &i2, &idum1, &idum2,
+       pchk1mat_( &m, &i2, &n, &i3, &iA, &jA, descA, &i7, &i2, idum1, idum2,
                         info );
        if ((*info == 0) && wantH){
-          pchk1mat_( &m, &i2, &n, &i3, &iH, &jH, descH, &i11, &i0, &idum1, &idum2,
+          pchk1mat_( &m, &i2, &n, &i3, &iH, &jH, descH, &i11, &i0, idum1, idum2,
                         info );
        }
     }
       
     if( *info != 0 ){
-        pxerbla_( ictxt, "PDGEQDWH", -1*info[0] ); 
+        pxerbla_( &ictxt, "PDGEQDWH", &(int){-1*info[0]} ); 
         return 0;
     }
     else if ( lquery ){
