@@ -189,7 +189,6 @@ int pdgeqdwh( char *jobh, int m, int n,
     double a, b, c, L2, Liconv, alpha, beta, Anorm, Ainvnorm, Li, norm_est;
     double tol = 3.e-1;
     double flops_dgeqrf, flops_dorgqr, flops_dgemm, flops_dpotrf, flops_dtrsm;
-    long int matsize;
     int MB = 2*m;
     int it, itconv, facto = -1;
     int itqr = 0, itpo = 0, alloc_qr = 0;
@@ -208,7 +207,7 @@ int pdgeqdwh( char *jobh, int m, int n,
     int ictxt;
     int wantH;
 
-    int lWi, lwork_qr, lwork_cn;
+    int lWi, lwork_qr;
     int *Wi = (int *)calloc(1,sizeof(int)) ;
     double *W  = (double *)calloc(1,sizeof(double)) ;
 
@@ -245,7 +244,7 @@ int pdgeqdwh( char *jobh, int m, int n,
            wantH = 1;
        }
 
-       int i2 = 2, i3 = 3, i7 = 7, i11 = 11, i_1 = -1;
+       int i2 = 2, i3 = 3, i7 = 7, i11 = 11;
        int *idum1, *idum2;
        idum1 = (int *)malloc(2*sizeof(int)) ;
        idum2 = (int *)malloc(2*sizeof(int)) ;
