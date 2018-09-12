@@ -21,6 +21,8 @@
 
 #include "common.h"
 
+extern void pdgenm2( double *A, int M, int N, int descA[9], double *W, int descW[9], double *Sx, int descSx[9], double *e, double tol);
+
 #ifndef max
 #define max(a, b) ((a) > (b) ? (a) : (b))
 #endif
