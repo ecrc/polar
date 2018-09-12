@@ -133,16 +133,6 @@ endif()
 
 
 include(ExternalProject)
-# ELPA
-find_package(ELPA)
-if( ELPA_FOUND )
-    include_directories( ${ELPA_INCLUDE_DIRS} )
-    list(APPEND CMAKE_INSTALL_RPATH ${ELPA_LIBRARY_DIRS})
-    link_directories( ${ELPA_LIBRARY_DIRS} )
-else()
-    set( ELPA_URL "http://elpa.mpcdf.mpg.de/html/Releases/2015.11.001/elpa-2015.11.001.tar.gz" )
-    message( FATAL_ERROR "## ELPA not found. ##\n Download ELPA from ${ELPA_URL}, compile it and set PKG_CONFIG_PATH environment variable to the proper location" )
-endif( ELPA_FOUND )
 
 
 # SLTMG - look for sltmg (only used for tests )

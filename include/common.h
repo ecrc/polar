@@ -18,7 +18,6 @@
 #include <mpi.h>
 #include "myscalapack.h"
 #include "flops.h"
-#include <elpa/elpa.h>
 
 #ifndef max
 #define max(a, b) ((a) > (b) ? (a) : (b))
