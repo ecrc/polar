@@ -7,7 +7,7 @@ pipeline {
 //// By agent label:
 //      agent { label 'sandybridge' }
 
-    agent { label 'Almaha' }
+    agent { label 'jenkinsfile' }
     triggers {
         pollSCM('H/10 * * * *')
     }
@@ -24,6 +24,7 @@ pipeline {
                 sh '''#!/bin/bash -le
                     # loads modules
                     module purge
+                    module load old-modules
                     module load intel/15
                     module load mpi-impi/5.0.1-intel-15
                     module load spack/git-morse-modules
@@ -54,6 +55,7 @@ pipeline {
                 sh '''#!/bin/bash -le
                     # loads modules
                     module purge
+                    module load old-modules
                     module load intel/15
                     module load mpi-impi/5.0.1-intel-15
                     module load spack/git-morse-modules
