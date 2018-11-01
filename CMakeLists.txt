@@ -189,10 +189,6 @@ if( NOT SCALAPACK_FOUND OR ( QDWH_TESTING AND NOT SLTMG_WORKS ) )
                          #LOG_INSTALL 1
     )
 
-    if ( NOT ELPA_FOUND )
-        # Build NETLIB-SCALAPACK before ELPA
-        add_dependencies(ELPA NETLIB-SCALAPACK)
-    endif()
 endif()
 
 
