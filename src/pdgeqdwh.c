@@ -21,6 +21,8 @@
 
 #include "common.h"
 
+extern void pdgenm2( double *A, int M, int N, int descA[9], double *W, int descW[9], double *Sx, int descSx[9], double *e, double tol);
+
 #ifndef max
 #define max(a, b) ((a) > (b) ? (a) : (b))
 #endif
@@ -187,7 +189,6 @@ int pdgeqdwh( char *jobh, int m, int n,
     double a, b, c, L2, Liconv, alpha, beta, Anorm, Ainvnorm, Li, norm_est;
     double tol = 3.e-1;
     double flops_dgeqrf, flops_dorgqr, flops_dgemm, flops_dpotrf, flops_dtrsm;
-    long int matsize;
     int MB = 2*m;
     int it, itconv, facto = -1;
     int itqr = 0, itpo = 0, alloc_qr = 0;
@@ -206,7 +207,7 @@ int pdgeqdwh( char *jobh, int m, int n,
     int ictxt;
     int wantH;
 
-    int lWi, lwork_qr, lwork_cn;
+    int lWi, lwork_qr;
     int *Wi = (int *)calloc(1,sizeof(int)) ;
     double *W  = (double *)calloc(1,sizeof(double)) ;
 
@@ -243,7 +244,7 @@ int pdgeqdwh( char *jobh, int m, int n,
            wantH = 1;
        }
 
-       int i2 = 2, i3 = 3, i7 = 7, i11 = 11, i_1 = -1;
+       int i2 = 2, i3 = 3, i7 = 7, i11 = 11;
        int *idum1, *idum2;
        idum1 = (int *)malloc(2*sizeof(int)) ;
        idum2 = (int *)malloc(2*sizeof(int)) ;
@@ -277,16 +278,16 @@ int pdgeqdwh( char *jobh, int m, int n,
        }
        idum2[0] =  1;
        idum2[1] =  15;
-       pchk1mat_( &m, &i2, &n, &i3, &iA, &jA, descA, &i7, &i2, &idum1, &idum2,
+       pchk1mat_( &m, &i2, &n, &i3, &iA, &jA, descA, &i7, &i2, idum1, idum2,
                         info );
        if ((*info == 0) && wantH){
-          pchk1mat_( &m, &i2, &n, &i3, &iH, &jH, descH, &i11, &i0, &idum1, &idum2,
+          pchk1mat_( &m, &i2, &n, &i3, &iH, &jH, descH, &i11, &i0, idum1, idum2,
                         info );
        }
     }
       
     if( *info != 0 ){
-        pxerbla_( ictxt, "PDGEQDWH", -1*info[0] ); 
+        pxerbla_( &ictxt, "PDGEQDWH", &(int){-1*info[0]} ); 
         return 0;
     }
     else if ( lquery ){
@@ -363,8 +364,8 @@ int pdgeqdwh( char *jobh, int m, int n,
 
     MPI_Comm_rank(MPI_COMM_WORLD, &myrank_mpi);
 
-    if (verbose & myrank_mpi == 0) { fprintf(stderr, "Entering QDWH\n");}
-    if (verbose & myrank_mpi == 0) { fprintf(stderr, "Preparing workspace for QDWH\n");}
+    if (verbose && (myrank_mpi == 0)) { fprintf(stderr, "Entering QDWH\n");}
+    if (verbose && (myrank_mpi == 0)) { fprintf(stderr, "Preparing workspace for QDWH\n");}
     qwtime = 0.0;
     if(prof) {qwtime -= MPI_Wtime();}
 
@@ -376,14 +377,14 @@ int pdgeqdwh( char *jobh, int m, int n,
     }
 
 
-    if (verbose & myrank_mpi == 0) { fprintf(stderr, "Finish preparing workspace for QDWH\n");}
+    if (verbose && (myrank_mpi == 0)) { fprintf(stderr, "Finish preparing workspace for QDWH\n");}
 
     /*
      * Save copy of A ==> H = U'*A
      */
     pdlacpy_ ( "A", &m, &n, A, &i1, &i1, descA, U, &i1, &i1, descU );
 
-    if (verbose & myrank_mpi == 0) { fprintf(stderr, "Cond estimate starts\n");}
+    if (verbose && (myrank_mpi == 0)) { fprintf(stderr, "Cond estimate starts\n");}
     /*
      * Calculate Li: reciprocal of condition number estimation
      */
@@ -392,9 +393,9 @@ int pdgeqdwh( char *jobh, int m, int n,
     if(prof) {litime =- MPI_Wtime();}
 
     pdlacpy_ ( "A", &m, &n, A, &i1, &i1, descA, B, &i1, &i1, descB );
-    if (verbose & myrank_mpi == 0) { fprintf(stderr, "lacpy ends\n");}
+    if (verbose && (myrank_mpi == 0)) { fprintf(stderr, "lacpy ends\n");}
     Anorm = pdlange_ ( "1", &m, &n, U, &i1, &i1, descU, H);
-    if (verbose & myrank_mpi == 0) { fprintf(stderr, "dlange ends\n");}
+    if (verbose && (myrank_mpi == 0)) { fprintf(stderr, "dlange ends\n");}
 
     alpha = 1.0; 
     pdgenm2( U, m, n, descU, B, descB, H, descH, &norm_est, tol);
@@ -420,7 +421,7 @@ int pdgeqdwh( char *jobh, int m, int n,
     /* estimate condition number using LU */
     else {
         pdgetrf_ ( &m, &n, B, &i1, &i1, descB, Wi, &iinfo );
-        if (verbose & myrank_mpi == 0) { fprintf(stderr, "LU ends\n");}
+        if (verbose && (myrank_mpi == 0)) { fprintf(stderr, "LU ends\n");}
 
         int lwork_cn = -1;
         pdgecon_ ("1", &m, B, &i1, &i1, descB, &Anorm, &Li, H, &lwork_cn, Wi, &lWi, &iinfo);
@@ -436,20 +437,20 @@ int pdgeqdwh( char *jobh, int m, int n,
     }
 
     if(prof) {litime += MPI_Wtime();}
-    if (verbose & myrank_mpi == 0) { fprintf(stderr, "Cond estimate ends\n");}
+    if (verbose && (myrank_mpi == 0)) { fprintf(stderr, "Cond estimate ends\n");}
 
     /*
      * Calculate norm_est
      * Scal the matrix by norm_est
      */
 
-    if (verbose & myrank_mpi == 0) { fprintf(stderr, "Normest starts\n");}
+    if (verbose && (myrank_mpi == 0)) { fprintf(stderr, "Normest starts\n");}
     nrmtime = 0.0;
     if(prof) {nrmtime =- MPI_Wtime();}
 
 
     if(prof) {nrmtime += MPI_Wtime();}
-    if (verbose & myrank_mpi == 0) { fprintf(stderr, "Normest ends\n");}
+    if (verbose && (myrank_mpi == 0)) { fprintf(stderr, "Normest ends\n");}
 
 
     itconv = 0; Liconv = Li;
@@ -477,7 +478,7 @@ int pdgeqdwh( char *jobh, int m, int n,
 	// Update Liconv
 	Liconv  = Liconv * (a + b * L2) / (1. + c * L2);
     }
-    if (verbose & myrank_mpi == 0) { fprintf(stderr, "QDWH loop starts\n");}
+    if (verbose && (myrank_mpi == 0)) { fprintf(stderr, "QDWH loop starts\n");}
     if (myrank_mpi == 0) { fprintf(stderr, "\nItConv %d itcqr %d itcpo %d norm_est %2.4e Li %2.4e \n", itconv, itcqr, itcpo, norm_est, Li); fprintf(stderr, "It Facto Conv\n");}
     it = 0;
 
@@ -632,10 +633,10 @@ int pdgeqdwh( char *jobh, int m, int n,
             sync_time_elapsed += MPI_Wtime();
             MPI_Allreduce( &sync_time_elapsed, &reduced_time_elapsed, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
         }
-        if (verbose & myrank_mpi == 0) fprintf(stderr, "%02d %-5s %e\n", it,
+        if (verbose && (myrank_mpi == 0)) fprintf(stderr, "%02d %-5s %e\n", it,
 	       facto == 0 ? "QR" : "PO", conv );
     }
-    if (verbose & myrank_mpi == 0) { fprintf(stderr, "QDWH loop ends\n");}
+    if (verbose && (myrank_mpi == 0)) { fprintf(stderr, "QDWH loop ends\n");}
 
     /*
      * A = U*H ==> H = U'*A ==> H = 0.5*(H'+H)
@@ -684,7 +685,7 @@ int pdgeqdwh( char *jobh, int m, int n,
         free( B );
     }
 
-    if (verbose & myrank_mpi == 0) { fprintf(stderr, "Exiting QDWH\n");}
+    if (verbose && (myrank_mpi == 0)) { fprintf(stderr, "Exiting QDWH\n");}
     return 0;
 
 }
