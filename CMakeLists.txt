@@ -174,7 +174,7 @@ if( NOT SCALAPACK_FOUND OR ( QDWH_TESTING AND NOT SLTMG_WORKS ) )
     # Use the built sltmg
     set( SLTMG_LIBRARIES "sltmg" )
 
-    # build scalapack for sltmg and or elpa
+    # build scalapack for sltmg
     string(REPLACE ";" " " LAPACK_LIBRARIES_STR "${LAPACK_LIBRARIES}")
     ExternalProject_Add( NETLIB-SCALAPACK
                          PREFIX dependencies

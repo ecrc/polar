@@ -29,7 +29,6 @@ pipeline {
                     module load mpi-impi/5.0.1-intel-15
                     module load spack/git-morse-modules
                     module load cmake-3.5.2-gcc-4.8.5-6kea3zp
-                    module load elpa/2015.11.001-intel-15
 
                     set -x
 
@@ -60,7 +59,6 @@ pipeline {
                     module load mpi-impi/5.0.1-intel-15
                     module load spack/git-morse-modules
                     module load cmake-3.5.2-gcc-4.8.5-6kea3zp
-                    module load elpa/2015.11.001-intel-15
 
                     set -x
 

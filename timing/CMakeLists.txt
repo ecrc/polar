@@ -25,7 +25,6 @@ foreach( test_src ${tests_files} )
 
     target_link_libraries( ${test_exe} ${QDWH_LIBNAME}
                                        ${MPI_C_LIBRARIES}
-                                       ${ELPA_LIBRARIES}
                                        ${SLTMG_LIBRARIES}
                                        ${SCALAPACK_LIBRARIES}
                                        ${LAPACKE_LIBRARIES}
