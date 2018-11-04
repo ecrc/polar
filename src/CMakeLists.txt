@@ -13,10 +13,5 @@ add_library( ${QDWH_LIBNAME} ${QDWH_SRC} )
 # Libraries to link
 target_link_libraries( ${QDWH_LIBNAME} ${MPI_C_LIBRARIES} ${SCALAPACK_LIBRARIES} ${ELPA_LIBRARIES} ${EXTRA_LIBS} )
 
-# Add ELPA depencency, to build ELPA first
-if( NOT ELPA_FOUND )
-    add_dependencies(${QDWH_LIBNAME} ELPA)
-endif()
-
 # Installation
 install( TARGETS ${QDWH_LIBNAME} DESTINATION lib )
