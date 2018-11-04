@@ -428,11 +428,8 @@ int pdgeqdwh( char *jobh, int m, int n,
 
         pdgecon_ ("1", &m, B, &i1, &i1, descB, &Anorm, &Li, H, &lwork_cn, Wi, &lWi, &iinfo);
         Li = norm_est/1.1*Li;    
-        /**
-         * WARNING: The cost of the gecon is estimated with only one iteration
-         */
-        flops += FLOPS_DGETRF(n, n)
-               + 2. * FLOPS_DTRSM( 'L', n, 1 );
+        //flops += FLOPS_DGETRF(n, n) + 2. * FLOPS_DTRSM( 'L', n, 1 );
+        flops += FLOPS_DGETRF(n, n);
     }
 
     if(prof) {litime += MPI_Wtime();}
