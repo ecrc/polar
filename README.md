@@ -1,24 +1,48 @@
+POLAR
+================
+POLAR is a high performance open-source software package to compute the polar decomposition ((PD)) of a dense matrix A = UH
+based on QR-based Dynamically Weighted Halley (QDWH) and ZOLO-PD algorithms.
+
 QDWH
 ================
 
-The **QR-based Dynamically Weighted Halley** (QDWH) package is a high performance open-source software
-for computing the polar decomposition of a dense matrix A = UH. 
-QDWH is written in C and requires ScaLAPACK installation, as the main software dependency.
-QDWH provides the polar decomposition and the performance and the accuracy of the results. 
-QDWH currently supports double precision arithmetics and run on shared and distributed-memory systems,
-using MPI.
+The **QR-based Dynamically Weighted Halley** (QDWH) is one of
+the most popular algorithms to compute the polar decomposition. It is backward stable and converges
+in at most six iterations. 
 
-Current Features of QDWH
+ZOLO-PD
+================
+
+ZOLO-PD relies on the **Zolotarev function which is the best rational approximant to the sign function**  
+for computing the polar decomposition.
+Building upon on the QR-based
+Dynamically Weighted Halley (QDWH) algorithm, the key idea
+lies in finding the best rational approximation for the scalar sign function,
+which also corresponds to the polar factor for symmetric matrices,
+to further accelerate the QDWH convergence.
+Based on the Zolotarev rational functions---introduced by Zolotarev (ZOLO) in
+1877--- this new PD algorithm ZOLO-PD converges within two iterations even for ill-conditioned matrices,
+instead of the original six iterations needed for QDWH.
+ZOLO-PD uses the property of Zolotarev functions that optimality is maintained when
+two functions are composed in an appropriate manner.
+The resulting ZOLO-PD has a convergence rate up to seventeen,
+in contrast to the cubic convergence rate for QDWH.
+This comes at the price of higher arithmetic costs and memory footprint. These
+extra floating-point operations can, however, be processed in an
+embarrassingly parallel fashion. 
+
+Current Features of QDWH/ZOLOPD
 ===========================
 
-- Support double precision.
-- Support dense two-dimensional block cyclic data distribution.
+- Written in C.
+- Support for Double Precision.
+- Support for Two-Dimensional Block Cyclic Data Distribution.
 - ScaLAPACK Interface / Native Interface.
 - ScaLAPACK-Compliant Error Handling.
 - ScaLAPACK-Derived Testing Suite
 - ScaLAPACK-Compliant Accuracy.
  
-Programming models (backends):
+Programming models and backends:
 1.  MPI
 2.  ScaLAPACK
 
@@ -26,16 +50,16 @@ Programming models (backends):
 Installation
 ============
 
-Installation requires at least **CMake** of version 3.2.3. To build QDWH,
+The installation requires at least **CMake** of version 3.2.3. To build the polar decomposition based on QDWH/ZOLOPD,
 follow these instructions:
 
-1.  Get QDWH from git repository
+1.  Get polar from git repository
 
-        git clone git@github.com:ecrc/qdwh
+        git clone git@github.com:ecrc/polar
 
-2.  Go into QDWH folder
+2.  Go into polar folder
 
-        cd qdwh
+        cd polar
 
 3.  Create build directory and go there
 
@@ -45,15 +69,19 @@ follow these instructions:
 
         cmake .. -DCMAKE_INSTALL_PREFIX=/path/to/install/ 
 
-5.  To build the testing binaries (optional)
+5.  To use exist dependencies
 
-        cmake .. -DCMAKE_INSTALL_PREFIX=/path/to/install/ -DQDWH_TESTING:BOOL=ON
+        cmake .. -DCMAKE_INSTALL_PREFIX=/path/to/install/ -DSCALAPACK_DIR=/path/to/scalapack/install/ -DSLTMG_LIBRARIES=/path/to/scalapack/install/lib/libsltmg.a
 
-5.  Build QDWH
+5.  To build the testing binaries (optional) add the following:
+
+        -DPOLAR_TESTING:BOOL=ON
+
+5.  Build polar
 
         make -j
 
-6.  Install QDWH
+6.  Install polar
 
         make install
 
@@ -64,19 +92,19 @@ follow these instructions:
     to your .bashrc file.
 
 Now you can use pkg-config executable to collect compiler and linker flags for
-QDWH.
+polar based on QDWH/ZOLO-PD.
 
 Testing and Timing
 ==================
 
 The directories testing and timing contain an example 
-to test the accuracy and the performance of QDWH using
-ill/well-conditioned random matrices.
+to test the accuracy and the performance of QDWH/ZOLO-PD using
+ill (with condition number less than 5.e12) and well-conditioned random matrices.
 
    The complete list of options is available below with -h option:
   
   ```
-       "======= QDWH testing using ScaLAPACK\n"
+       "======= QDWH/ZOLOPD testing using ScaLAPACK\n"
        " -p      --nprow         : Number of MPI process rows\n"
        " -q      --npcol         : Number of MPI process cols\n"
        " -jl     --lvec          : Compute left singular vectors\n"
@@ -104,25 +132,35 @@ TODO List
 =========
 
 1.  Add support for the other precisions 
-2.  Provide full StarPU support (GPUs and distributed-memory systems)
-3.  Port to other dynamic runtime systems
+2.  Extend task-based programming model
+3.  Port to various dynamic runtime systems
 
 
 References
 ==========
-1. D. Sukkari, H. Ltaief, A. Esposito and D. Keyes, A QDWH-Based SVD Software Framework on
-Distributed-Memory Manycore Systems, *Submitted to ACM Transactions on Mathematical Software*, 
+1. H. Ltaief, D. Sukkari, A. Esposito, Y. Nakatsukasa and D. Keyes, Massively Parallel 
+Polar Decomposition on Distributed-Memory Systems, *Submitted to IEEE Transactions on 
+Parallel Computing TOPC*, http://hdl.handle.net/10754/626359.1, 2018.
+2. D. Sukkari, H. Ltaief, A. Esposito and D. Keyes, A QDWH-Based SVD Software Framework on
+Distributed-Memory Manycore Systems, *Submitted to ACM Transactions on Mathematical Software TOMS*, 
 http://hdl.handle.net/10754/626212, 2017.
-2. D. Sukkari, H. Ltaief, M. Faverge, and D. Keyes, Asynchronous Task-Based Polar
+3. D. Sukkari, H. Ltaief, M. Faverge, and D. Keyes, Asynchronous Task-Based Polar
 Decomposition on Massively Parallel Systems, *IEEE Transactions on Parallel and 
-Distributed Systems*, 2017.
-3. D. Sukkari, H. Ltaief and D. Keyes, A High Performance QDWH-SVD Solver using
-Hardware Accelerators, *ACM Transactions on Mathematical Software*, vol. 43 (1), pp. 1-25, 2016.
-4. D. Sukkari, H. Ltaief and D. Keyes, High Performance Polar Decomposition for SVD
-Solvers on Distributed Memory Systems, Best Papers, Proceedings of the 22nd International Euro-Par Conference, 2016.
-5. Y. Nakatsukasa and N. J. Higham, Stable and Efficient Spectral Divide and Conquer 
+Distributed Systems TPDS*, volume 29, pages 312–323, https://ieeexplore.ieee.org/document/8053812/, 2017.
+4. D. Sukkari, H. Ltaief and D. Keyes, A High Performance QDWH-SVD Solver using
+Hardware Accelerators, *ACM Transactions on Mathematical Software TOMS*, vol. 43 (1), pp. 1-25, 2016.
+5. D. Sukkari, H. Ltaief and D. Keyes, High Performance Polar Decomposition for SVD
+Solvers on Distributed Memory Systems, Best Papers, *Proceedings of the 22nd International 
+Euro-Par Conference*, https://doi.org/10.1007/978-3-319-43659-3_44, 2016.
+6. D.Sukkari, H. Ltaief and D. Keyes, A High Performance QDWH-SVD Solver using 
+Hardware Accelerators, *ACM Transactions on Mathematical Software TOMS*, 
+http://doi.acm. org/10.1145/2894747, volume 43, pages 6:1–6:25, 2016.
+7. Y. Nakatsukasa and N. J. Higham, Stable and Efficient Spectral Divide and Conquer 
 Algorithms for the Symmetric Eigenvalue Decomposition and the SVD, *SIAM Journal on Scientific Computing*,
 vol. 35, no. 3, pp. A1325–A1349, http://epubs.siam.org/doi/abs/10.1137/120876605, 2013.
+8. Y. Nakatsukasa, R. Freund, using Zolotarev's Rational Approximation for Computing the Polar, 
+Symmetric Eigenvalue, and Singular Value Decompositions, *SIAM Review*, 
+https://books.google.com.sa/books?id=a9d7rgEACAAJ, 2016.
 
 
 Questions?

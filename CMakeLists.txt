@@ -6,24 +6,24 @@ if("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_BINARY_DIR}")
                         "this directory. Example: mkdir build && cd build && cmake ..")
 endif()
 
-project(QDWH Fortran C)
+project(POLAR Fortran C)
 
 #########################
 ### VARIABLES ###########
 #########################
-set( QDWH_LIBNAME qdwh )
-option( QDWH_TESTING "Generates testing binaries" OFF)
+set( POLAR_LIBNAME polar )
+option( POLAR_TESTING "Generates testing binaries" OFF)
 option( BUILD_SHARED_LIBS "Generates shared libraries instead of static" OFF)
 option( SHARED_NETLIBSCALAPACK "Build NETLIB-SCALAPACK as shared library." ${BUILD_SHARED_LIBS})
 option( USE_PARALLEL_BLAS "If possible, prefer parallel blas libraries" ON )
 set(EXTRA_LIBS "" CACHE STRING "Additional libraries that may be needed to compile/link" )
 
-# Version 2.0.0
-SET( QDWH_VERSION_MAJOR 2 )
-SET( QDWH_VERSION_MINOR 0 )
-SET( QDWH_VERSION_PATCH 0 )
-set( QDWH_VERSION "${QDWH_VERSION_MAJOR}.${QDWH_VERSION_MINOR}.${QDWH_VERSION_PATCH}" )
-#execute_process(COMMAND git rev-parse --short HEAD OUTPUT_VARIABLE QDWH_VERSION_RELEASE )
+# Version 3.0.0
+SET( POLAR_VERSION_MAJOR 3 )
+SET( POLAR_VERSION_MINOR 0 )
+SET( POLAR_VERSION_PATCH 0 )
+set( POLAR_VERSION "${POLAR_VERSION_MAJOR}.${POLAR_VERSION_MINOR}.${POLAR_VERSION_PATCH}" )
+#execute_process(COMMAND git rev-parse --short HEAD OUTPUT_VARIABLE POLAR_VERSION_RELEASE )
 
 
 # Set the RPATH config
@@ -38,7 +38,7 @@ set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/lib)
 
 
 # Packaging (make package)
-SET(CPACK_PACKAGE_VERSION ${QDWH_VERSION})
+SET(CPACK_PACKAGE_VERSION ${POLAR_VERSION})
 SET(CPACK_GENERATOR "TGZ")
 INCLUDE(CPack)
 
@@ -136,7 +136,7 @@ include(ExternalProject)
 
 
 # SLTMG - look for sltmg (only used for tests )
-if( QDWH_TESTING )
+if( POLAR_TESTING )
     set( SLTMG_LIBRARIES "" CACHE STRING "User provided sltmg library" )
     set( _notfound_msg_ "SLTMG not found, NETLIB-SCALAPACK will be downloaded in order to generate libsltmg.a\n If you want to use your own SLTMG, define SLTMG_LIBRARIES and make sure SCALAPACK is found." )
     if( SLTMG_LIBRARIES )
@@ -153,7 +153,7 @@ if( QDWH_TESTING )
     endif()
 endif()
 
-if( NOT SCALAPACK_FOUND OR ( QDWH_TESTING AND NOT SLTMG_WORKS ) )
+if( NOT SCALAPACK_FOUND OR ( POLAR_TESTING AND NOT SLTMG_WORKS ) )
     # Download NETLIB-SCALAPACK
     set( _build_netlib-scalapack )
     set( NETLIB_SCALAPACK_URL "http://www.netlib.org/scalapack/scalapack-2.0.2.tgz" CACHE STRING "URL to download NETLIB-SCALAPACK project" )
@@ -192,11 +192,11 @@ if( NOT SCALAPACK_FOUND OR ( QDWH_TESTING AND NOT SLTMG_WORKS ) )
 endif()
 
 
-# QDWH code
+# POLAR code
 add_subdirectory(src)
 
 # TESTS
-if( QDWH_TESTING )
+if( POLAR_TESTING )
 
     ## LAPACKE
     find_package(LAPACKE COMPONENTS LAPACKEXT)
@@ -241,12 +241,13 @@ if( QDWH_TESTING )
     add_subdirectory(timing)
 endif()
 
+install( FILES ${CMAKE_SOURCE_DIR}/include/polar.h DESTINATION include )
 
 # PKGCONFIG
 set(prefix ${CMAKE_INSTALL_PREFIX})
 set(libdir ${CMAKE_INSTALL_PREFIX}/lib)
 set(PKG_CONFIG_DIR ${libdir}/pkgconfig)
-configure_file(${CMAKE_SOURCE_DIR}/qdwh.pc.in ${CMAKE_CURRENT_BINARY_DIR}/qdwh.pc)
-install( FILES ${CMAKE_BINARY_DIR}/qdwh.pc
+configure_file(${CMAKE_SOURCE_DIR}/polar.pc.in ${CMAKE_CURRENT_BINARY_DIR}/polar.pc)
+install( FILES ${CMAKE_BINARY_DIR}/polar.pc
          DESTINATION ${PKG_CONFIG_DIR}
        )

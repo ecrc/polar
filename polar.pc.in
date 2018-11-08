@@ -1,0 +1,9 @@
+prefix=@prefix@
+libdir=@libdir@
+
+Name: polar
+Description: QR-based Dynamically Weighted Halley (POLAR)
+Version: @POLAR_VERSION@
+URL: http://github.com/ecrc/polar
+Libs: -L${libdir} -lpolar
+Requires: mpi sclapack

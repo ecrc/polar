@@ -18,12 +18,12 @@ foreach( test_src ${tests_files} )
     endif()
 
     add_executable( ${test_exe} testing.c ${test_src}  )
-    add_dependencies( ${test_exe} ${QDWH_LIBNAME} )
+    add_dependencies( ${test_exe} ${POLAR_LIBNAME} )
     if( _build_netlib-scalapack )
         add_dependencies( ${test_exe} NETLIB-SCALAPACK )
     endif()
 
-    target_link_libraries( ${test_exe} ${QDWH_LIBNAME}
+    target_link_libraries( ${test_exe} ${POLAR_LIBNAME}
                                        ${MPI_C_LIBRARIES}
                                        ${SLTMG_LIBRARIES}
                                        ${SCALAPACK_LIBRARIES}
@@ -33,21 +33,14 @@ foreach( test_src ${tests_files} )
                                        ${EXTRA_LIBS} )
     install( TARGETS ${test_exe} DESTINATION lib/testing )
 endforeach()
-if( ${NUMBER_OF_CPU} LESS 4 )
-    set( _p 1 )
-    set( _q 1 )
-elseif( ${NUMBER_OF_CPU} LESS 16 )
-    set( _p 2 )
-    set( _q 2 )
-else()
-    set( _p 4 )
-    set( _q 4 )
-endif()
+set( _p 4 )
+set( _q 4 )
 math( EXPR _pq "${_p} * ${_q}" )
 
 # Add basic tests. To run them type: 'make test' in build directory
 # add_test( NAME "testing_pdgesvd:A" COMMAND mpirun -np ${_pq} testing_pdgesvd --nprow ${_p} --npcol ${_q} --nb 64 --n_range 512:512:512 --niter 3 --check --qwmr )
 # add_test( NAME "testing_pdgesvd:B" COMMAND mpirun -np ${_pq} testing_pdgesvd --nprow ${_p} --npcol ${_q} --nb 64 --n_range 512:512:512 --niter 3 --check --qwdc )
 # add_test( NAME "testing_pdgesvd:C" COMMAND mpirun -np ${_pq} testing_pdgesvd --nprow ${_p} --npcol ${_q} --nb 64 --n_range 512:512:512 --niter 3 --check --qwel )
-add_test( NAME "testing_pdgeqdwh:A" COMMAND mpirun -np ${_pq} testing_pdgeqdwh --nprow ${_p} --npcol ${_q} --nb 64 --n_range 512:512:512 --niter 3 --check )
+add_test( NAME "testing_pdgeqdwh:A"   COMMAND mpirun -np ${_pq} ./testing_pdgeqdwh --nprow ${_p} --npcol ${_q} --nb 64 --n_range 512:512:512 --niter 3 --check )
+add_test( NAME "testing_pdgezolopd:B" COMMAND mpirun -np ${_pq} ./testing_pdgezolopd --nprow ${_p} --npcol ${_q} --nb 64 --n_range 512:512:512 --niter 3 --check --cond 1 )
 

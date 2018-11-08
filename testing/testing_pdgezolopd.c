@@ -7,9 +7,9 @@
 
 /**
  *
- * @file testing_pdgeqdwh.c
+ * @file testing_pdgezolopd.c
  *
- *  QDWH is a high performance software framework for computing 
+ *  ZOLOPD is a high performance software framework for computing 
  *  the polar decomposition on distributed-memory manycore systems provided by KAUST
  *
  * @version 3.0.0
@@ -19,7 +19,6 @@
  *
  **/
 
-#include <stdlib.h>
 #include "polar.h"
 
 
@@ -50,7 +49,7 @@ static inline double cWtime(void)
 void print_usage(void)
 {
     fprintf(stderr,
-            "======= QDWH testing using ScaLAPACK\n"
+            "======= ZOLOPD testing using ScaLAPACK\n"
             " -p      --nprow         : Number of MPI process rows\n"
             " -q      --npcol         : Number of MPI process cols\n"
             " -jl     --lvec          : Compute left singular vectors\n"
@@ -144,7 +143,7 @@ int main(int argc, char **argv) {
     int ictxt, myrow, mycol;
     int mloc, nloc, mlocW;
     int mpi_comm_rows, mpi_comm_cols;
-    int i, j, k, iter, size, info_facto_mr, info_facto_dc, info_facto_qw, info_facto_el, info_facto_sl, info, iseed;
+    int i, j, k, iter, size, info_facto_mr, info_facto_dc, info_facto_zo, info_facto_el, info_facto_sl, info, iseed;
     int my_info_facto;
     int i0 = 0, i1 = 1;
     int lwork, liwork, ldw;
@@ -169,7 +168,7 @@ int main(int argc, char **argv) {
 
     double flops, GFLOPS;
 
-    double orth_Uqw, berr_UHqw;
+    double orth_Uzo, berr_UHzo;
     double frobA;
 
     double alpha, beta;
@@ -282,8 +281,8 @@ int main(int argc, char **argv) {
         if (myrank_mpi == 0) fprintf(stderr, "/////////////////////////////////////////////////////////////////////////\n");
         if (myrank_mpi == 0) fprintf(stderr, "/////////////////////////////////////////////////////////////////////////\n");
 
-        // QDWH
-	//if ( qwmr || qwdc || qwel || polarqdwh) {
+        // ZOLOPD
+	//if ( zomr || zodc || zoel || polarzolopd) {
         jobu   = lvec ? "V" : "N";
         int lWork1, lWork2, lWi;
         Wloc1  = (double *)calloc(1,sizeof(double)) ;
@@ -291,7 +290,7 @@ int main(int argc, char **argv) {
         lWork1 = -1; 
         lWork2 = -1; 
 
-        pdgeqdwh( "H", n, n, 
+        pdgezolopd( "H", n, n, 
                   A, i1, i1, descA, 
                   H, i1, i1, descH, 
                   //NULL, lWork, //debug
@@ -318,16 +317,16 @@ int main(int argc, char **argv) {
                       Acpy, &i1, &i1, descAcpy, 
                       A,    &i1, &i1, descA ); 
             flops = 0.0;
-            if (verbose & myrank_mpi == 0) fprintf(stderr, "\nQDWH + ScaLAPACK EIG done\n");
-            if (verbose & myrank_mpi == 0) fprintf(stderr, "QDWH starts...\n");
+            if (verbose & myrank_mpi == 0) fprintf(stderr, "\nZOLOPD + ScaLAPACK EIG done\n");
+            if (verbose & myrank_mpi == 0) fprintf(stderr, "ZOLOPD starts...\n");
 
             /*
-             * Find polar decomposition using QDWH. 
+             * Find polar decomposition using ZOLOPD. 
              * C contains the positive-definite factor. 
              * A contains the orthogonal polar factor.
              */
 
-            pdgeqdwh( "H", n, n,
+            pdgezolopd( "H", n, n,
                       A, i1, i1, descA, 
                       H, i1, i1, descH, 
                       //NULL, lWork, //debug
@@ -335,10 +334,10 @@ int main(int argc, char **argv) {
                       Wloc2, lWork2,
                       &my_info_facto);
 
-	    MPI_Allreduce( &my_info_facto, &info_facto_qw, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
+	    MPI_Allreduce( &my_info_facto, &info_facto_zo, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
 
-            if (verbose & myrank_mpi == 0) fprintf(stderr, "QDWH ends...\n");
-            if (verbose & check & myrank_mpi == 0) fprintf(stderr, "Testing QDWH starts...\n");
+            if (verbose & myrank_mpi == 0) fprintf(stderr, "ZOLOPD ends...\n");
+            if (verbose & check & myrank_mpi == 0) fprintf(stderr, "Testing ZOLOPD starts...\n");
             /*
              * Checking the polar factorization
              */
@@ -355,7 +354,7 @@ int main(int argc, char **argv) {
                          A, &i1, &i1, descA, 
                          &beta, 
                          C, &i1, &i1, descC);
-                orth_Uqw  = pdlange_ ( "f", &n, &n, C, &i1, &i1, descC, Wloc1)/sqrt(n);
+                orth_Uzo  = pdlange_ ( "f", &n, &n, C, &i1, &i1, descC, Wloc1)/sqrt(n);
                /*
                 * checking the factorization |A-Up*H|
                 */ 
@@ -367,13 +366,13 @@ int main(int argc, char **argv) {
                          H, &i1, &i1, descH, 
                          &beta, 
                          C, &i1, &i1, descC);
-                berr_UHqw  = pdlange_ ( "f", &n, &n, C, &i1, &i1, descC, Wloc1)/frobA;
+                berr_UHzo  = pdlange_ ( "f", &n, &n, C, &i1, &i1, descC, Wloc1)/frobA;
                 if (  myrank_mpi == 0) {
-                     fprintf(stderr, "# QDWH \n"); 
+                     fprintf(stderr, "# ZOLOPD \n"); 
                      fprintf(stderr, "#\n");
 	             fprintf(stderr, "# \tN      \tNB    \tNP    \tP   \tQ    \tinfo  \tBerr_UpH  \tOrth_Up     \n");
 	             fprintf(stderr, "   %6d \t%4d \t%4d \t%3d \t%3d", n, nb, nprocs_mpi, nprow, npcol);
-	             fprintf(stderr, "\t%d \t%2.4e \t%2.4e \n", info_facto_qw, berr_UHqw, orth_Uqw);
+	             fprintf(stderr, "\t%d \t%2.4e \t%2.4e \n", info_facto_zo, berr_UHzo, orth_Uzo);
                      fprintf(stderr, "/////////////////////////////////////////////////////////////////////////\n");
                 }
             }

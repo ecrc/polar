@@ -24,21 +24,23 @@ pipeline {
                 sh '''#!/bin/bash -le
                     # loads modules
                     module purge
-                    module load old-modules
-                    module load intel/15
-                    module load mpi-impi/5.0.1-intel-15
-                    module load spack/git-morse-modules
-                    module load cmake-3.5.2-gcc-4.8.5-6kea3zp
+                    module load cmake/3.9.6
+                    module load intel/2017
+                    module load intelmpi/2017/intel-2017
 
                     set -x
-
                     module list
+
+                    export CC=icc # just in case
+                    export FC=ifort # just in case
+                    export F90=ifort # just in case
+                    export I_MPI_CC="$CC"
+                    export I_MPI_FC="$FC"
+                    export I_MPI_F90="$F90"
 
                     mkdir -p build
                     cd build && rm -rf ./*
-                    export I_MPI_CC="icc"
-                    export I_MPI_F90="ifort"
-                    cmake .. -DCMAKE_INSTALL_PREFIX=$PWD/installdir -DQDWH_TESTING:BOOL=ON -DEXTRA_LIBS="ifcore"
+                    cmake .. -DCMAKE_INSTALL_PREFIX=$PWD/installdir -DPOLAR_TESTING:BOOL=ON -DEXTRA_LIBS="ifcore"
 
                     # build
                     make
@@ -54,11 +56,9 @@ pipeline {
                 sh '''#!/bin/bash -le
                     # loads modules
                     module purge
-                    module load old-modules
-                    module load intel/15
-                    module load mpi-impi/5.0.1-intel-15
-                    module load spack/git-morse-modules
-                    module load cmake-3.5.2-gcc-4.8.5-6kea3zp
+                    module load cmake/3.9.6
+                    module load intel/2017
+                    module load intelmpi/2017/intel-2017
 
                     set -x
 
@@ -67,9 +67,6 @@ pipeline {
                     # Delete previous CTest results and run tests
                     rm -rf $WORKSPACE/build/Testing
                     cd $WORKSPACE/build
-                    # need to fix the tests
-                    sed -i s/:512:/:4096:/ testing/CTestTestfile.cmake
-                    sed -i s/:512:/:4096:/ timing/CTestTestfile.cmake
                     export PATH=$PATH:. 
                     ctest --no-compress-output -T Test
                 '''
@@ -78,7 +75,7 @@ pipeline {
         stage ('package') {
             steps {
                 sh 'cd build && make package'
-                archiveArtifacts allowEmptyArchive: true, artifacts: 'build/QDWH-2.0.0-Linux.tar.gz'
+                archiveArtifacts allowEmptyArchive: true, artifacts: 'build/POLAR-2.0.0-Linux.tar.gz'
             }
         }
     }

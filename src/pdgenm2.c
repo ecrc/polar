@@ -9,19 +9,22 @@
  *
  * @file pdgenm2.c
  *
- *  QDWH is a high performance software framework for computing 
+ *  ZOLOPD is a high performance software framework for computing 
  *  the polar decomposition on distributed-memory manycore systems provided by KAUST
  *
- * @version 2.0.0
+ * @version 3.0.0
  * @author Dalal Sukkari
  * @author Hatem Ltaief
- * @date 2017-11-13
+ * @date 2018-11-08
  *
  **/
 
-#include "common.h"
+#include "polar.h"
 
-void pdgenm2( double *A, int M, int N, int descA[9], double *W, int descW[9], double *Sx, int descSx[9], double *e, double tol)
+void pdgenm2( double *A, int M, int N, int descA[9], 
+              double *W, int descW[9], 
+              double *Sx, int descSx[9], 
+              double *e, double tol)
 {
     /*
     *
@@ -71,7 +74,7 @@ void pdgenm2( double *A, int M, int N, int descA[9], double *W, int descW[9], do
         //    Sx = rand(size(Sx),class(Sx));
         //end
 
-        pdgemv_ ("N", &M, &N, &alpha, A, &i1, &i1, descA, Sx, &i1, &i1, descSx, &i1, &beta, W, &i1, &i1, descW, &i1);
+        pdgemv_ ("T", &M, &N, &alpha, A, &i1, &i1, descA, Sx, &i1, &i1, descSx, &i1, &beta, W, &i1, &i1, descW, &i1);
         normx = pdlange_ ( "f", &N, &i1, W, &i1, &i1, descW, w);
    
         *e = normx/normSx;
