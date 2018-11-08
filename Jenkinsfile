@@ -75,7 +75,7 @@ pipeline {
         stage ('package') {
             steps {
                 sh 'cd build && make package'
-                archiveArtifacts allowEmptyArchive: true, artifacts: 'build/POLAR-2.0.0-Linux.tar.gz'
+                archiveArtifacts allowEmptyArchive: true, artifacts: 'build/POLAR-3.0.0-Linux.tar.gz'
             }
         }
     }
