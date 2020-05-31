@@ -33,9 +33,13 @@ foreach( test_src ${tests_files} )
                                        ${EXTRA_LIBS} )
     install( TARGETS ${test_exe} DESTINATION lib/testing )
 endforeach()
-set( _p 4 )
-set( _q 4 )
-math( EXPR _pq "${_p} * ${_q}" )
+#set( _p 4 )
+#set( _q 4 )
+#math( EXPR _pq "${_p} * ${_q}" )
+
+set( _p ${P} )
+set( _q ${Q} )
+set( _pq ${ncores} )
 
 # Add basic tests. To run them type: 'make test' in build directory
 # add_test( NAME "testing_pdgesvd:A" COMMAND mpirun -np ${_pq} testing_pdgesvd --nprow ${_p} --npcol ${_q} --nb 64 --n_range 512:512:512 --niter 3 --check --qwmr )
